@@ -7,9 +7,11 @@ import { cn } from "@/lib/utils";
 
 const MotionButtonInner = motion.create(Button);
 
-interface MotionButtonProps extends ButtonProps, Omit<HTMLMotionProps<"button">, keyof ButtonProps> {
+type MotionButtonProps = ButtonProps & HTMLMotionProps<"button"> & {
   glow?: boolean;
-}
+  children?: React.ReactNode;
+  type?: "button" | "submit" | "reset";
+};
 
 export const MotionButton = React.forwardRef<HTMLButtonElement, MotionButtonProps>(
   ({ className, glow, ...props }, ref) => {
