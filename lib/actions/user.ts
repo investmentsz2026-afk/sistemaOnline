@@ -11,16 +11,16 @@ import { AuditService } from "@/services/audit.service";
 
 export async function deactivateUserAction(userId: string) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") {
+  if ((session?.user as any)?.role !== "ADMIN") {
     return { error: "No autorizado" };
   }
 
-  if (session.user.id === userId) {
+  if ((session?.user as any)?.id === userId) {
     return { error: "No puedes desactivarte a ti mismo" };
   }
 
   try {
-    await (UserService as any).softDelete(userId, session.user.id!);
+    await (UserService as any).softDelete(userId, (session?.user as any)?.id!);
     revalidatePath("/dashboard/moderators");
     revalidatePath("/dashboard/users");
     return { success: "Usuario desactivado" };
@@ -31,12 +31,12 @@ export async function deactivateUserAction(userId: string) {
 
 export async function reactivateUserAction(userId: string) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") {
+  if ((session?.user as any)?.role !== "ADMIN") {
     return { error: "No autorizado" };
   }
 
   try {
-    await UserService.reactivate(userId, session.user.id!);
+    await UserService.reactivate(userId, (session?.user as any)?.id!);
     revalidatePath("/dashboard/moderators");
     revalidatePath("/dashboard/users");
     return { success: "Usuario reactivado" };
@@ -47,7 +47,7 @@ export async function reactivateUserAction(userId: string) {
 
 export async function createStaffAction(values: any) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") {
+  if ((session?.user as any)?.role !== "ADMIN") {
     return { error: "No autorizado" };
   }
 
@@ -78,7 +78,7 @@ export async function createStaffAction(values: any) {
     );
 
     await AuditService.log(
-      session.user.id!,
+      (session?.user as any)?.id!,
       "STAFF_CREATED",
       `Nuevo ${role} creado: ${email}`
     );
@@ -93,7 +93,7 @@ export async function createStaffAction(values: any) {
 
 export async function updateStaffAction(userId: string, values: any) {
   const session = await auth();
-  if (session?.user?.role !== "ADMIN") {
+  if ((session?.user as any)?.role !== "ADMIN") {
     return { error: "No autorizado" };
   }
 
@@ -115,7 +115,7 @@ export async function updateStaffAction(userId: string, values: any) {
     await prisma.$executeRawUnsafe(query, ...params);
 
     await AuditService.log(
-      session.user.id!,
+      (session?.user as any)?.id!,
       "STAFF_UPDATED",
       `Miembro del equipo actualizado: ${email}`
     );
