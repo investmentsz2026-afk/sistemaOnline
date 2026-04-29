@@ -1,10 +1,11 @@
-import prisma from "../lib/prisma.js";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
-async function main() {
-  console.log("🌱 Inicializando seed de la base de datos...");
+const prisma = new PrismaClient();
 
-  // Crear usuario admin
+async function main() {
+  console.log("🌱 Inicializando seed automático en el servidor...");
+
   const adminEmail = "admin@sistema.com";
   const adminPassword = "Admin123!";
 
@@ -13,34 +14,31 @@ async function main() {
   });
 
   if (existingAdmin) {
-    console.log("✅ Usuario admin ya existe");
+    console.log("✅ El usuario administrador ya existe en la base de datos.");
   } else {
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
-    const admin = await prisma.user.create({
+    await prisma.user.create({
       data: {
-        name: "Administrador del Sistema",
+        name: "Administrador",
         email: adminEmail,
         password: hashedPassword,
         role: "ADMIN",
-        phoneNumber: "+1234567890",
-        company: "Sistema Empresarial",
         isActive: true,
       },
     });
 
-    console.log("✅ Usuario admin creado:");
-    console.log(`   📧 Email: ${adminEmail}`);
-    console.log(`   🔐 Contraseña: ${adminPassword}`);
-    console.log(`   👤 ID: ${admin.id}`);
+    console.log("✅ Usuario administrador creado con éxito.");
+    console.log(`📧 Email: ${adminEmail}`);
+    console.log(`🔐 Password: ${adminPassword}`);
   }
 
-  console.log("✨ Seed completado!");
+  console.log("✨ Proceso de Seed finalizado.");
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Error en seed:", e);
+    console.error("❌ Error durante el seed:", e);
     process.exit(1);
   })
   .finally(async () => {
