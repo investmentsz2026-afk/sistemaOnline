@@ -1,10 +1,15 @@
 import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient();
+// Usamos la misma configuración que en lib/prisma.ts para que funcione en Neon
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log("🌱 Inicializando seed automático en el servidor...");
+  console.log("🌱 Inicializando seed automático con adaptador Neon...");
 
   const adminEmail = "admin@sistema.com";
   const adminPassword = "Admin123!";
@@ -14,7 +19,7 @@ async function main() {
   });
 
   if (existingAdmin) {
-    console.log("✅ El usuario administrador ya existe en la base de datos.");
+    console.log("✅ El usuario administrador ya existe.");
   } else {
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
@@ -29,8 +34,6 @@ async function main() {
     });
 
     console.log("✅ Usuario administrador creado con éxito.");
-    console.log(`📧 Email: ${adminEmail}`);
-    console.log(`🔐 Password: ${adminPassword}`);
   }
 
   console.log("✨ Proceso de Seed finalizado.");
@@ -43,4 +46,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end();
   });
