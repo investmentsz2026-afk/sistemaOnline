@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { ModernCard } from "@/components/ui/motion/modern-card";
 import { AnimatedContainer } from "@/components/ui/motion/animated-container";
+import { cn } from "@/lib/utils";
 import { 
   Users, 
   CreditCard, 
@@ -14,7 +15,6 @@ import {
 import prisma from "@/lib/prisma";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
-
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
@@ -183,6 +183,6 @@ function ActivityLogItem({ title, time, desc, status }: { title: string, time: s
     </div>
   );
 }
-
-import { cn } from "@/lib/utils";
-
+    </div>
+  );
+}
