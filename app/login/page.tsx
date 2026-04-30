@@ -79,7 +79,7 @@ export default function LoginPage() {
         
         // Wait a bit to show success animation before redirecting
         setTimeout(() => {
-          router.push("/dashboard");
+          router.push("/inicio");
           router.refresh();
         }, 1500);
       }
@@ -92,7 +92,7 @@ export default function LoginPage() {
   };
 
   const handleSocialSignIn = (provider: 'google' | 'facebook') => {
-    signIn(provider, { callbackUrl: '/dashboard' });
+    signIn(provider, { callbackUrl: '/inicio' });
   };
 
   return (
