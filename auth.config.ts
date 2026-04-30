@@ -14,11 +14,17 @@ export default {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }: any) {
+    async jwt({ token, user, trigger, session }: any) {
       if (user) {
         token.role = (user as any).role;
         token.id = user.id;
       }
+
+      if (trigger === "update" && session) {
+        if (session.name) token.name = session.name;
+        if (session.email) token.email = session.email;
+      }
+
       return token;
     },
     async session({ session, token }: any) {
@@ -29,12 +35,21 @@ export default {
       if (token.role && session.user) {
         (session.user as any).role = token.role;
       }
+      
+      if (token.name && session.user) {
+        session.user.name = token.name;
+      }
+      
+      if (token.email && session.user) {
+        session.user.email = token.email;
+      }
 
       return session;
     },
   },
   pages: {
     signIn: "/login",
+    signOut: "/login",
   },
   session: {
     strategy: "jwt",

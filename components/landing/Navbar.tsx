@@ -1,13 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Coins, Menu, X, Globe, User } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { UserMenu } from "@/components/ui/motion/user-menu";
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { data: session } = useSession();
+  const pathname = usePathname();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -37,42 +42,65 @@ export const Navbar = () => {
 
           {/* Desktop Nav */}
           <div className="hidden lg:flex items-center gap-10">
-            {["Inicio", "Beneficios", "Cómo funciona", "Comunidad"].map((item) => (
-              <Link 
-                key={item} 
-                href={`#${item.toLowerCase().replace(" ", "-")}`}
-                className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 hover:text-white transition-all relative group"
-              >
-                {item}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-cyan-400 transition-all group-hover:w-full"></span>
-              </Link>
-            ))}
+            {(session?.user 
+              ? ["Gane", "Batalla", "Mis Ofertas", "Retiro", "Recompensas"]
+              : ["Inicio", "Beneficios", "Cómo funciona", "Comunidad"]
+            ).map((item) => {
+              const targetPath = item === "Gane" ? "/inicio" : `/${item.toLowerCase().replace(" ", "-")}`;
+              const href = session?.user ? targetPath : `#${item.toLowerCase().replace(" ", "-")}`;
+              const isActive = session?.user && pathname === targetPath;
+              
+              return (
+                <Link 
+                  key={item} 
+                  href={href}
+                  className="group relative"
+                >
+                  <span className={`text-xs font-black uppercase tracking-[0.2em] transition-all ${isActive ? "text-[#00e676]" : "text-slate-400 hover:text-white"}`}>
+                    {item}
+                  </span>
+                  <span className={`absolute -bottom-1 left-0 h-0.5 transition-all group-hover:w-full ${isActive ? "w-full bg-[#00e676] shadow-[0_0_10px_#00e676]" : "w-0 bg-cyan-400"}`}></span>
+                </Link>
+              );
+            })}
           </div>
 
           {/* Auth Buttons */}
           <div className="hidden lg:flex items-center gap-8">
-            <Link href="/login" className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
-              <User className="w-4 h-4" />
-              Login
-            </Link>
-            <Link href="/register">
-              <button className="bg-white text-slate-950 px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-cyan-400 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)] active:scale-95">
-                Empezar Ahora
-              </button>
-            </Link>
+            {session?.user ? (
+              <UserMenu user={session.user as any} showName={true} />
+            ) : (
+              <>
+                <Link href="/login" className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors">
+                  <User className="w-4 h-4" />
+                  Login
+                </Link>
+                <Link href="/register">
+                  <button className="bg-white text-slate-950 px-8 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-cyan-400 transition-all shadow-[0_0_30px_rgba(255,255,255,0.2)] active:scale-95">
+                    Empezar Ahora
+                  </button>
+                </Link>
+              </>
+            )}
           </div>
 
-          {/* Mobile Menu Toggle */}
-          <button 
-            className="lg:hidden text-white p-2"
-            onClick={() => setIsOpen(!isOpen)}
-          >
-            {isOpen ? <X className="w-8 h-8" /> : <Menu className="w-8 h-8" />}
-          </button>
+          {/* Mobile Menu Toggle or User Profile */}
+          <div className="lg:hidden">
+            {session?.user ? (
+              <UserMenu user={session.user as any} showName={false} />
+            ) : (
+              <button 
+                className="text-white p-2"
+                onClick={() => setIsOpen(!isOpen)}
+              >
+                {isOpen ? <X className="w-8 h-8" /> : <Menu className="w-8 h-8" />}
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Mobile Nav */}
-        {isOpen && (
+        {/* Mobile Nav (Only for guests) */}
+        {isOpen && !session?.user && (
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}

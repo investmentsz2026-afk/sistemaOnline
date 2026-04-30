@@ -15,8 +15,14 @@ import prisma from "@/lib/prisma";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
+import { redirect } from "next/navigation";
+
 export default async function DashboardPage() {
   const session = await auth();
+
+  if (session?.user?.role === "CLIENT") {
+    redirect("/inicio");
+  }
 
   // Fetch real data from DB
   const [userCount, auditCount, recentAudits] = await Promise.all([

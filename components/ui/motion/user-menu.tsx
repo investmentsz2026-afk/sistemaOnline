@@ -85,11 +85,17 @@ export const UserMenu = ({ user, showName = true }: UserMenuProps) => {
           </div>
           <DropdownMenuSeparator className="bg-white/5" />
           <DropdownMenuGroup>
-            <DropdownMenuItem className="flex items-center gap-3 p-3 rounded-xl cursor-pointer outline-none transition-all group">
+            <DropdownMenuItem 
+              className="flex items-center gap-3 p-3 rounded-xl cursor-pointer outline-none transition-all group"
+              onClick={() => window.location.href = '/perfil'}
+            >
               <User className="h-4 w-4 text-slate-400 group-focus:text-cyan-400 transition-colors" />
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 group-focus:text-white transition-colors">Ver Perfil</span>
             </DropdownMenuItem>
-            <DropdownMenuItem className="flex items-center gap-3 p-3 rounded-xl cursor-pointer outline-none transition-all group">
+            <DropdownMenuItem 
+              className="flex items-center gap-3 p-3 rounded-xl cursor-pointer outline-none transition-all group"
+              onClick={() => window.location.href = '/configuracion'}
+            >
               <Settings className="h-4 w-4 text-slate-400 group-focus:text-blue-400 transition-colors" />
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 group-focus:text-white transition-colors">Configuración</span>
             </DropdownMenuItem>

@@ -128,3 +128,70 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+/* ====================================================
+   GLOBAL LIGHT MODE OVERRIDES (ULTRA-AGGRESSIVE)
+   ==================================================== 
+*/
+html:not(.dark) body, 
+html.light body {
+  background: #f1f5f9 !important;
+  background-image: none !important;
+  color: #1e293b !important;
+}
+
+/* Hardcoded Backgrounds */
+html:not(.dark) .bg-\[\#050a1f\], html.light .bg-\[\#050a1f\],
+html:not(.dark) .bg-\[\#020617\], html.light .bg-\[\#020617\],
+html:not(.dark) .bg-\[\#0a102a\], html.light .bg-\[\#0a102a\],
+html:not(.dark) .bg-\[\#0b0e14\], html.light .bg-\[\#0b0e14\],
+html:not(.dark) .bg-\[\#0f1423\], html.light .bg-\[\#0f1423\],
+html:not(.dark) .bg-\[\#171c2e\], html.light .bg-\[\#171c2e\],
+html:not(.dark) .bg-slate-900, html.light .bg-slate-900,
+html:not(.dark) .bg-slate-950, html.light .bg-slate-950 {
+  background-color: #ffffff !important;
+  background-image: none !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Form Inputs and Selects */
+html:not(.dark) input, html.light input,
+html:not(.dark) select, html.light select,
+html:not(.dark) textarea, html.light textarea {
+  background-color: #f8fafc !important;
+  color: #1e293b !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Typography Overrides */
+html:not(.dark) .text-white, html.light .text-white,
+html:not(.dark) .text-slate-100, html.light .text-slate-100,
+html:not(.dark) .text-slate-200, html.light .text-slate-200,
+html:not(.dark) .text-slate-300, html.light .text-slate-300 {
+  color: #0f172a !important;
+}
+
+html:not(.dark) .text-slate-400, html.light .text-slate-400,
+html:not(.dark) .text-slate-500, html.light .text-slate-500 {
+  color: #475569 !important;
+}
+
+/* Borders */
+html:not(.dark) .border-white\/5, html.light .border-white\/5,
+html:not(.dark) .border-white\/10, html.light .border-white\/10,
+html:not(.dark) .border-slate-800, html.light .border-slate-800 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Glass and Floating Panels */
+html:not(.dark) .glass-premium, html.light .glass-premium,
+html:not(.dark) .backdrop-blur-xl, html.light .backdrop-blur-xl,
+html:not(.dark) .backdrop-blur-3xl, html.light .backdrop-blur-3xl {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Special Highlighting (Active states in green/cyan) */
+html:not(.dark) .text-cyan-400, html.light .text-cyan-400 { color: #0891b2 !important; }
+html:not(.dark) .text-emerald-400, html.light .text-emerald-400 { color: #059669 !important; }

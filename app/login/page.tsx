@@ -99,15 +99,7 @@ export default function LoginPage() {
     <PageTurn>
       <div className="relative min-h-screen flex flex-col lg:flex-row bg-[#020617] overflow-hidden selection:bg-cyan-500/30">
         
-        {/* Floating Home Button */}
-        <Link 
-          href="/"
-          className="absolute top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-full text-white/70 hover:text-white hover:bg-white/10 transition-all group overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <Home className="h-4 w-4" />
-          <span className="text-[10px] font-black uppercase tracking-widest">Inicio</span>
-        </Link>
+
 
         {/* Left Side: Brand Experience */}
         <div className="hidden lg:flex relative w-1/2 h-full min-h-screen items-center justify-center p-12 overflow-hidden border-r border-white/5">
