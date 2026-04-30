@@ -19,7 +19,7 @@ import { AddStaffModal } from "@/components/admin/add-staff-modal";
 export default async function ModeratorsPage() {
   const session = await auth();
 
-  if ((session?.user as any)?.role !== "ADMIN") {
+  if (session?.user?.role !== "ADMIN" && session?.user?.role !== "MODERATOR") {
     redirect("/dashboard");
   }
 

@@ -42,27 +42,37 @@ export const Navbar = () => {
 
           {/* Desktop Nav */}
           <div className="hidden lg:flex items-center gap-10">
-            {(session?.user 
-              ? ["Gane", "Batalla", "Mis Ofertas", "Retiro", "Recompensas"]
-              : ["Inicio", "Beneficios", "Cómo funciona", "Comunidad"]
-            ).map((item) => {
-              const targetPath = item === "Gane" ? "/inicio" : `/${item.toLowerCase().replace(" ", "-")}`;
-              const href = session?.user ? targetPath : `#${item.toLowerCase().replace(" ", "-")}`;
-              const isActive = session?.user && pathname === targetPath;
+            {(() => {
+              const baseItems = session?.user 
+                ? ["Gane", "Batalla", "Mis Ofertas", "Retiro", "Recompensas"]
+                : ["Inicio", "Beneficios", "Cómo funciona", "Comunidad"];
               
-              return (
-                <Link 
-                  key={item} 
-                  href={href}
-                  className="group relative"
-                >
-                  <span className={`text-xs font-black uppercase tracking-[0.2em] transition-all ${isActive ? "text-[#00e676]" : "text-slate-400 hover:text-white"}`}>
-                    {item}
-                  </span>
-                  <span className={`absolute -bottom-1 left-0 h-0.5 transition-all group-hover:w-full ${isActive ? "w-full bg-[#00e676] shadow-[0_0_10px_#00e676]" : "w-0 bg-cyan-400"}`}></span>
-                </Link>
-              );
-            })}
+              const navItems = [...baseItems];
+              if (session?.user && (session.user.role === "ADMIN" || session.user.role === "MODERATOR")) {
+                navItems.push("Panel Admin");
+              }
+
+              return navItems.map((item) => {
+                let targetPath = item === "Gane" ? "/inicio" : `/${item.toLowerCase().replace(" ", "-")}`;
+                if (item === "Panel Admin") targetPath = "/dashboard";
+                
+                const href = session?.user ? targetPath : `#${item.toLowerCase().replace(" ", "-")}`;
+                const isActive = session?.user && pathname === targetPath;
+                
+                return (
+                  <Link 
+                    key={item} 
+                    href={href}
+                    className="group relative"
+                  >
+                    <span className={`text-xs font-black uppercase tracking-[0.2em] transition-all ${isActive ? "text-cyan-400" : item === "Panel Admin" ? "text-indigo-400 hover:text-indigo-300" : "text-slate-400 hover:text-white"}`}>
+                      {item}
+                    </span>
+                    <span className={`absolute -bottom-1 left-0 h-0.5 transition-all group-hover:w-full ${isActive ? "w-full bg-cyan-400 shadow-[0_0_10px_#22d3ee]" : "w-0 bg-indigo-500"}`}></span>
+                  </Link>
+                );
+              });
+            })()}
           </div>
 
           {/* Auth Buttons */}

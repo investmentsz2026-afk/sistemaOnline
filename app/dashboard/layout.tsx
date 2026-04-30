@@ -15,6 +15,10 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  if (session.user.role === "CLIENT") {
+    redirect("/inicio");
+  }
+
   return (
     <div className="flex h-screen bg-white dark:bg-[#020617] overflow-hidden transition-colors duration-300">
       {/* Sidebar - Desktop only for now as defined in sidebar.tsx */}

@@ -14,7 +14,8 @@ import {
   Coins,
   Bell,
   Search,
-  UserCircle
+  UserCircle,
+  Home
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MotionButton } from "@/components/ui/motion/motion-button";
@@ -25,6 +26,12 @@ import { UserMenu } from "@/components/ui/motion/user-menu";
 import { useSession } from "next-auth/react";
 
 const routes = [
+  {
+    label: "Inicio",
+    icon: Home,
+    href: "/inicio",
+    color: "text-emerald-400",
+  },
   {
     label: "Dashboard",
     icon: LayoutDashboard,
