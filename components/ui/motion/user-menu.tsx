@@ -38,7 +38,7 @@ export const UserMenu = ({ user, showName = true }: UserMenuProps) => {
     setIsLoggingOut(true);
     // Wait for animation
     setTimeout(() => {
-      signOut({ callbackUrl: "/login" });
+      signOut({ callbackUrl: window.location.origin + "/login" });
     }, 2000);
   };
 
