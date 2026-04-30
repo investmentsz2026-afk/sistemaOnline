@@ -7,21 +7,31 @@ const { auth } = NextAuth(authConfig);
 export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
+  const role = (req.auth?.user as any)?.role;
 
   const isApiAuthRoute = nextUrl.pathname.startsWith("/api/auth");
-  const isPublicRoute = ["/", "/login", "/register"].includes(nextUrl.pathname);
-  const isAuthRoute = ["/login", "/register"].includes(nextUrl.pathname);
-
+  const isPublicRoute = ["/login", "/register"].includes(nextUrl.pathname);
+  
   if (isApiAuthRoute) return NextResponse.next();
 
-  if (isAuthRoute) {
+  // Root redirect logic
+  if (nextUrl.pathname === "/") {
     if (isLoggedIn) {
-      return NextResponse.redirect(new URL("/dashboard", nextUrl));
+      return NextResponse.redirect(new URL(role === "CLIENT" ? "/inicio" : "/dashboard", nextUrl));
+    }
+    return NextResponse.redirect(new URL("/login", nextUrl));
+  }
+
+  // Auth routes (Login/Register)
+  if (isPublicRoute) {
+    if (isLoggedIn) {
+      return NextResponse.redirect(new URL(role === "CLIENT" ? "/inicio" : "/dashboard", nextUrl));
     }
     return NextResponse.next();
   }
 
-  if (!isLoggedIn && !isPublicRoute) {
+  // Protected routes
+  if (!isLoggedIn) {
     return NextResponse.redirect(new URL("/login", nextUrl));
   }
 
