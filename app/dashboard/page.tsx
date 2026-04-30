@@ -183,6 +183,3 @@ function ActivityLogItem({ title, time, desc, status }: { title: string, time: s
     </div>
   );
 }
-    </div>
-  );
-}
