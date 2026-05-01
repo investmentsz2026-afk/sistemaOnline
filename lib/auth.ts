@@ -4,6 +4,7 @@ import authConfig from "../auth.config";
 import { loginSchema } from "@/schemas/auth.schema";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { Role } from "@prisma/client";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -14,7 +15,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       if (token.role && session.user) {
-        session.user.role = token.role as UserRole;
+        session.user.role = token.role as Role;
       }
 
       if (session.user) {
