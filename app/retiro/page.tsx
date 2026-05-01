@@ -2,7 +2,6 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { Navbar } from "@/components/landing/Navbar";
-import { MobileBottomNav } from "@/components/landing/MobileBottomNav";
 import { Wallet, Flame, Bell, ChevronRight } from "lucide-react";
 import { RetiroOptions } from "./RetiroOptions";
 
@@ -74,7 +73,6 @@ export default async function RetiroPage() {
         <RetiroOptions balance={balance} />
       </div>
 
-      <MobileBottomNav />
     </main>
   );
 }

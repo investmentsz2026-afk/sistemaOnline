@@ -7,6 +7,38 @@ import bcrypt from "bcryptjs";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  callbacks: {
+    async session({ token, session }) {
+      if (token.sub && session.user) {
+        session.user.id = token.sub;
+      }
+
+      if (token.role && session.user) {
+        session.user.role = token.role as UserRole;
+      }
+
+      if (session.user) {
+        session.user.balance = token.balance as number;
+      }
+
+      return session;
+    },
+    async jwt({ token }) {
+      if (!token.sub) return token;
+
+      const existingUser = await prisma.user.findUnique({
+        where: { id: token.sub },
+        select: { role: true, balance: true }
+      });
+
+      if (!existingUser) return token;
+
+      token.role = existingUser.role;
+      token.balance = existingUser.balance;
+
+      return token;
+    }
+  },
   providers: [
     Credentials({
       async authorize(credentials) {

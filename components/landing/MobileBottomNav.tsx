@@ -13,11 +13,11 @@ export const MobileBottomNav = () => {
   if (!session?.user) return null;
 
   const routes = [
-    { label: "Gane", icon: Gamepad2, href: "/inicio" },
-    { label: "Batalla", icon: Percent, href: "/batalla" },
-    { label: "Mis Ofertas", icon: Layers, href: "/mis-ofertas" },
-    { label: "Retiro", icon: DollarSign, href: "/retiro" },
-    { label: "Recompensas", icon: Medal, href: "/recompensas" },
+    { label: "GANE", icon: Gamepad2, href: "/inicio" },
+    { label: "BATALLA", icon: Percent, href: "/batalla" },
+    { label: "OFERTAS", icon: Layers, href: "/ofertas" },
+    { label: "RETIRO", icon: DollarSign, href: "/retiro" },
+    { label: "RANKING", icon: Medal, href: "/recompensas" },
   ];
 
   return (

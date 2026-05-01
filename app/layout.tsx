@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/components/auth-provider";
+import { MobileBottomNav } from "@/components/landing/MobileBottomNav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,8 +38,11 @@ export default function RootLayout({
       >
         <ThemeProvider>
           <AuthProvider>
-            {children}
+            <div className="flex-1 flex flex-col relative min-h-screen">
+              {children}
+            </div>
             <Toaster position="top-right" richColors />
+            <MobileBottomNav />
           </AuthProvider>
         </ThemeProvider>
       </body>

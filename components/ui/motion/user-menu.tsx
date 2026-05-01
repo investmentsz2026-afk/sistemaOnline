@@ -36,9 +36,14 @@ export const UserMenu = ({ user, showName = true }: UserMenuProps) => {
 
   const handleSignOut = async () => {
     setIsLoggingOut(true);
+    
+    // Si es Admin o Moderador, lo mandamos a su login especial
+    const isStaff = user.role === "ADMIN" || user.role === "MODERATOR";
+    const redirectUrl = isStaff ? "/moderators/login" : "/login";
+    
     // Wait for animation
     setTimeout(() => {
-      signOut({ callbackUrl: window.location.origin + "/login" });
+      signOut({ callbackUrl: window.location.origin + redirectUrl });
     }, 2000);
   };
 
@@ -119,7 +124,7 @@ export const UserMenu = ({ user, showName = true }: UserMenuProps) => {
       <LoginOverlay 
         isVisible={isLoggingOut} 
         status="closing" 
-        message="Cerrando Sesión" 
+        message={user.role === "ADMIN" || user.role === "MODERATOR" ? "DESCONEXIÓN SEGURA" : "Cerrando Sesión"} 
       />
     </>
   );

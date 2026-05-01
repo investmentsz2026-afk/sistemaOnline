@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import { toast } from "sonner";
 import { 
   Coins, 
@@ -12,6 +12,8 @@ import {
   Loader2, 
   ShieldCheck, 
   Zap,
+  ArrowLeft,
+  AlertCircle
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -33,7 +35,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -51,7 +52,6 @@ export default function LoginPage() {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    // Show initial loading overlay
     setShowOverlay(true);
     setOverlayStatus("loading");
     setOverlayMessage("Iniciando Sesión");
@@ -65,13 +65,30 @@ export default function LoginPage() {
 
       if (result?.error) {
         setOverlayStatus("error");
-        setOverlayMessage("Acceso Denegado");
+        setOverlayMessage("Error de Acceso");
         
         setTimeout(() => {
           setShowOverlay(false);
           setShowErrorDialog(true);
         }, 1500);
       } else {
+        const response = await fetch("/api/auth/session");
+        const session = await response.json();
+        const role = session?.user?.role;
+
+        if (role === "ADMIN" || role === "MODERATOR") {
+          // Si es staff intentando entrar por login de usuario, cerramos sesión y mostramos error genérico
+          await signOut({ redirect: false });
+          setOverlayStatus("error");
+          setOverlayMessage("Error de Acceso");
+          
+          setTimeout(() => {
+            setShowOverlay(false);
+            setShowErrorDialog(true);
+          }, 1500);
+          return;
+        }
+
         setOverlayStatus("success");
         setOverlayMessage("Acceso Concedido");
         
@@ -88,13 +105,30 @@ export default function LoginPage() {
     }
   };
 
-  const handleSocialSignIn = (provider: 'google' | 'facebook') => {
-    signIn(provider, { callbackUrl: '/inicio' });
+  const handleGoHome = async () => {
+    await signOut({ redirect: false });
+    router.push("/");
   };
 
   return (
     <PageTurn>
       <div className="relative min-h-screen flex flex-col lg:flex-row bg-[#020617] overflow-hidden selection:bg-cyan-500/30">
+        {/* Botón Regresar al Inicio con limpieza de sesión */}
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="absolute top-8 left-8 z-50"
+        >
+          <button 
+            onClick={handleGoHome}
+            className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors group"
+          >
+            <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-cyan-500/20 group-hover:border-cyan-500/50 transition-all">
+              <ArrowLeft className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Regresar al inicio</span>
+          </button>
+        </motion.div>
         
         {/* Left Side: Brand Experience */}
         <div className="hidden lg:flex relative w-1/2 h-full min-h-screen items-center justify-center p-12 overflow-hidden border-r border-white/5">
@@ -104,6 +138,7 @@ export default function LoginPage() {
               alt="Gaming Background" 
               fill 
               className="object-cover opacity-40 grayscale-[0.5] pointer-events-none"
+              sizes="50vw"
             />
             <div className="absolute inset-0 bg-gradient-to-br from-cyan-950/40 via-[#020617] to-[#020617]"></div>
           </div>
@@ -172,9 +207,16 @@ export default function LoginPage() {
             <DialogHeader className="items-center text-center">
               <AlertCircle className="w-8 h-8 text-red-500 mb-4" />
               <DialogTitle className="text-xl font-black text-white uppercase">Error de Acceso</DialogTitle>
-              <DialogDescription className="text-slate-400">Credenciales incorrectas.</DialogDescription>
+              <DialogDescription className="text-slate-400">Usuario o contraseña incorrectos.</DialogDescription>
             </DialogHeader>
-            <DialogFooter><Button onClick={() => setShowErrorDialog(false)} className="w-full bg-white/5 text-white">Aceptar</Button></DialogFooter>
+            <DialogFooter>
+              <Button 
+                onClick={() => setShowErrorDialog(false)} 
+                className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black h-12 rounded-xl"
+              >
+                ACEPTAR
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
