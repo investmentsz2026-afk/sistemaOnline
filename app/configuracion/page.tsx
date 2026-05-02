@@ -4,6 +4,7 @@ import { Navbar } from "@/components/landing/Navbar";
 import { MobileBottomNav } from "@/components/landing/MobileBottomNav";
 import { SettingsForm } from "./SettingsForm";
 import { Settings } from "lucide-react";
+import { BackButton } from "@/components/ui/motion/back-button";
 
 export default async function ConfiguracionPage() {
   const session = await auth();
@@ -19,6 +20,9 @@ export default async function ConfiguracionPage() {
 
       <div className="pt-32 px-4 max-w-3xl mx-auto">
         
+        {/* Botón de Regreso */}
+        <BackButton text="Volver al Inicio" href="/inicio" />
+
         {/* Header Config */}
         <div className="flex flex-col items-center mb-10 text-center">
           <div className="relative mb-6">

@@ -15,7 +15,8 @@ import {
   Bell,
   Search,
   UserCircle,
-  Home
+  Home,
+  DollarSign
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MotionButton } from "@/components/ui/motion/motion-button";
@@ -55,6 +56,12 @@ const routes = [
     icon: Users,
     href: "/dashboard/users",
     color: "text-violet-400",
+  },
+  {
+    label: "Retiros",
+    icon: DollarSign,
+    href: "/dashboard/withdrawals",
+    color: "text-yellow-400",
   },
   {
     label: "Mi Perfil",

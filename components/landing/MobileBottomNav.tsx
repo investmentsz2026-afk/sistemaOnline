@@ -12,6 +12,11 @@ export const MobileBottomNav = () => {
 
   if (!session?.user) return null;
 
+  const isAdminOrMod = session?.user?.role === "ADMIN" || session?.user?.role === "MODERATOR";
+  
+  // Si es staff, no mostramos el menú inferior de jugador
+  if (isAdminOrMod) return null;
+
   const routes = [
     { label: "GANE", icon: Gamepad2, href: "/inicio" },
     { label: "BATALLA", icon: Percent, href: "/batalla" },
@@ -29,7 +34,7 @@ export const MobileBottomNav = () => {
           return (
             <Link 
               key={route.href} 
-              href={route.href}
+              href={route.href === "/recompensas" ? `${route.href}?t=${Date.now()}` : route.href}
               className="flex flex-col items-center gap-1 p-2 flex-1"
             >
               <div className={cn(

@@ -22,18 +22,23 @@ export const Navbar = () => {
 
   const getNavItems = () => {
     if (session?.user) {
-      const items = [
+      const isAdminOrMod = session.user.role === "ADMIN" || session.user.role === "MODERATOR";
+      
+      if (isAdminOrMod) {
+        return [
+          { label: "INICIO", href: "/inicio" },
+          { label: "RECOMPENSAS", href: "/recompensas" },
+          { label: "PANEL ADMIN", href: "/dashboard" },
+        ];
+      }
+
+      return [
         { label: "GANE", href: "/inicio" },
         { label: "BATALLA", href: "/batalla" },
         { label: "MIS OFERTAS", href: "/ofertas" },
         { label: "RETIRO", href: "/retiro" },
         { label: "RECOMPENSAS", href: "/recompensas" },
       ];
-
-      if (session.user.role === "ADMIN" || session.user.role === "MODERATOR") {
-        items.push({ label: "PANEL ADMIN", href: "/dashboard" });
-      }
-      return items;
     }
 
     return [
@@ -47,7 +52,7 @@ export const Navbar = () => {
   const navItems = getNavItems();
 
   return (
-    <nav className={`fixed top-0 w-full z-50 transition-all duration-500 px-4 md:px-6 ${scrolled ? 'py-2 md:py-4' : 'py-4 md:py-8'}`}>
+    <nav className={`fixed top-0 w-full z-[100] transition-all duration-500 px-4 md:px-6 ${scrolled ? 'py-2 md:py-4' : 'py-4 md:py-8'}`}>
       <motion.div 
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -134,10 +139,19 @@ export const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile Menu Toggle or User Profile */}
+          {/* Mobile Menu Toggle (Left side for staff) or User Profile */}
           <div className="lg:hidden flex items-center gap-4">
             {session?.user ? (
-              <>
+              <div className="flex items-center gap-3">
+                {(session.user.role === "ADMIN" || session.user.role === "MODERATOR") && (
+                  <button 
+                    className="text-white p-2 hover:bg-white/5 rounded-xl transition-colors"
+                    onClick={() => setIsOpen(!isOpen)}
+                  >
+                    {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                  </button>
+                )}
+                
                 {/* Mobile Coin Counter */}
                 <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full backdrop-blur-md">
                   <Coins className="w-3.5 h-3.5 text-cyan-400" />
@@ -146,7 +160,7 @@ export const Navbar = () => {
                   </span>
                 </div>
                 <UserMenu user={session.user as any} showName={false} />
-              </>
+              </div>
             ) : (
               <button 
                 className="text-white p-2"
@@ -158,9 +172,8 @@ export const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile Nav */}
         <AnimatePresence>
-          {isOpen && !session?.user && (
+          {isOpen && (
             <motion.div 
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}

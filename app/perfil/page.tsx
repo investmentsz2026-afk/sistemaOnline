@@ -3,8 +3,7 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { Navbar } from "@/components/landing/Navbar";
 import { MobileBottomNav } from "@/components/landing/MobileBottomNav";
-import { ProfileForm } from "./ProfileForm";
-import { UserCircle } from "lucide-react";
+import { ProfileClient } from "./ProfileClient";
 
 export default async function PerfilPage() {
   const session = await auth();
@@ -13,42 +12,48 @@ export default async function PerfilPage() {
     redirect("/login");
   }
 
+  // Traemos todos los datos necesarios para el sistema de niveles
   const dbUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { name: true, email: true, role: true }
+    select: { 
+      id: true,
+      name: true, 
+      email: true, 
+      role: true,
+      balance: true,
+      image: true
+    }
   });
+
+  if (!dbUser) {
+    redirect("/login");
+  }
 
   return (
     <main className="min-h-screen bg-[#050a1f] text-white overflow-x-hidden pb-24">
       {/* Navigation */}
       <Navbar />
 
-      <div className="pt-32 px-4 max-w-3xl mx-auto">
+      <div className="pt-24 md:pt-32 px-4 max-w-4xl mx-auto">
         
-        {/* Header Profile */}
-        <div className="flex flex-col items-center mb-10 text-center">
-          <div className="relative mb-6">
-            <div className="absolute -inset-2 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full blur-xl opacity-50"></div>
-            <div className="relative w-24 h-24 rounded-full bg-[#0a102a] border-2 border-cyan-400 flex items-center justify-center shadow-2xl">
-              <UserCircle className="w-12 h-12 text-cyan-400" />
-            </div>
-          </div>
-          <h1 className="text-3xl font-black tracking-tight">{dbUser?.name || "Usuario"}</h1>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-widest mt-2">{dbUser?.role}</p>
-        </div>
-
-        {/* Profile Card */}
-        <div className="bg-[#0b0e14]/80 backdrop-blur-xl border border-white/5 rounded-3xl p-6 md:p-10 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
-          
-          <div className="relative z-10">
-            <h2 className="text-xl font-bold mb-8 text-white border-b border-white/10 pb-4">
-              Información Personal
-            </h2>
-
-            <ProfileForm user={{ name: dbUser?.name || null, email: dbUser?.email || null }} />
+        {/* Título de la Sección */}
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em]">Dashboard de Usuario</h2>
+          <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-full border border-white/5">
+            <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
+            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter italic">Online</span>
           </div>
         </div>
+
+        {/* Componente de Perfil con Niveles y Edición */}
+        <ProfileClient user={{
+          id: dbUser.id,
+          name: dbUser.name,
+          email: dbUser.email,
+          role: dbUser.role.toString(),
+          balance: dbUser.balance,
+          image: dbUser.image
+        }} />
 
       </div>
 
