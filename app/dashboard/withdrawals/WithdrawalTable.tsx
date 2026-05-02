@@ -8,7 +8,8 @@ import {
   User as UserIcon,
   CreditCard,
   Calendar,
-  Eye
+  Eye,
+  Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
