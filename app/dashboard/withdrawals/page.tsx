@@ -42,11 +42,11 @@ export default async function WithdrawalsPage() {
   });
 
   // Estadísticas rápidas
-  const pendingCount = withdrawals.filter(w => w.status === "PENDING").length;
-  const completedCount = withdrawals.filter(w => w.status === "COMPLETED").length;
+  const pendingCount = withdrawals.filter((w: any) => w.status === "PENDING").length;
+  const completedCount = withdrawals.filter((w: any) => w.status === "COMPLETED").length;
   const totalAmount = withdrawals
-    .filter(w => w.status === "COMPLETED")
-    .reduce((acc, curr) => acc + curr.amount, 0);
+    .filter((w: any) => w.status === "COMPLETED")
+    .reduce((acc: number, curr: any) => acc + curr.amount, 0);
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">

@@ -12,8 +12,14 @@ export async function completeSocialMission(missionId: string) {
   }
 
   try {
+    const userMissionModel = (prisma as any).userMission;
+
+    if (!userMissionModel) {
+      return { success: false, error: "El sistema de misiones está sincronizando. Reintenta en unos segundos." };
+    }
+
     // 1. Verificar si ya completó la misión
-    const existing = await prisma.userMission.findUnique({
+    const existing = await userMissionModel.findUnique({
       where: {
         userId_missionId: {
           userId: session.user.id,
@@ -28,7 +34,7 @@ export async function completeSocialMission(missionId: string) {
 
     // 2. Registrar la misión y sumar el premio ($0.02)
     await prisma.$transaction([
-      prisma.userMission.create({
+      userMissionModel.create({
         data: {
           userId: session.user.id,
           missionId: missionId
