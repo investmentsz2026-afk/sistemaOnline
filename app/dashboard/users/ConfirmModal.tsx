@@ -22,7 +22,7 @@ export function ConfirmModal({
   message,
   confirmText = "Confirmar",
   variant = "danger"
-}) {
+}: ConfirmModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
