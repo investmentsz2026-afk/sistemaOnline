@@ -136,8 +136,9 @@ export function MessagesClient({
           return [conv, ...prev];
         });
         setSelectedConv(conv);
-        setMessages(conv.messages || []);
-        setParticipants(conv.participants || []);
+        const anyConv = conv as any;
+        setMessages(anyConv.messages || []);
+        setParticipants(anyConv.participants || []);
         setActiveTab("chats");
         setIsMobileView(true);
       }

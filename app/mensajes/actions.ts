@@ -174,7 +174,8 @@ export async function getOrCreateConversation(targetUserId: string) {
         }
       },
       include: {
-        participants: { include: { user: true } }
+        participants: { include: { user: true } },
+        messages: true
       }
     });
 
