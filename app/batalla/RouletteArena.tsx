@@ -147,15 +147,15 @@ export const RouletteArena = ({ initialBalance, initialBattles, currentUserId }:
       }
       setCurrentRoom(room);
       // Usar los participantes reales devueltos por el servidor
-      if (res.participants) {
-        setJoinedPlayers(res.participants.map((p: any) => ({
+      if ((res as any).participants) {
+        setJoinedPlayers((res as any).participants.map((p: any) => ({
           ...p,
           isUser: p.userId === currentUserId
         })));
       }
       toast.success("¡Te has unido a la batalla!");
     } else {
-      toast.error(res.error || "No se pudo unir a la sala");
+      toast.error((res as any).error || "No se pudo unir a la sala");
     }
   };
 
