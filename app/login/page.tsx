@@ -158,13 +158,19 @@ export default function LoginPage() {
 
           <div className="relative z-10 max-w-lg">
             <AnimatedContainer direction="right" delay={0.2}>
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-16 h-16 bg-black rounded-2xl border border-white/10 flex items-center justify-center shadow-2xl">
-                  <Coins className="text-cyan-400 h-10 w-10" strokeWidth={1.5} />
+              <div className="flex items-center gap-6 mb-8">
+                <div className="relative">
+                  {/* Intensive Glow */}
+                  <div className="absolute -inset-4 bg-cyan-500/30 rounded-full blur-3xl animate-pulse"></div>
+                  
+                  {/* Large Shiny Sphere */}
+                  <div className="relative w-24 h-24 rounded-full border-4 border-white/10 p-1 bg-black overflow-hidden shadow-[0_0_50px_rgba(34,211,238,0.4)]">
+                    <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover rounded-full" />
+                  </div>
                 </div>
                 <div>
-                  <h1 className="text-4xl font-black tracking-tighter text-white uppercase leading-none">Battle</h1>
-                  <h1 className="text-4xl font-black tracking-tighter text-cyan-400 uppercase leading-none">Coins</h1>
+                  <h1 className="text-5xl font-black tracking-tighter text-white uppercase leading-none">Battle</h1>
+                  <h1 className="text-5xl font-black tracking-tighter text-cyan-400 uppercase leading-none">Coins</h1>
                 </div>
               </div>
               

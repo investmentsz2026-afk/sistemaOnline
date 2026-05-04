@@ -352,7 +352,11 @@ export function MessagesClient({
                       >
                         <div className="relative">
                           <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
-                            {otherUser?.image ? <img src={otherUser.image} /> : <UserCircle className="text-slate-500" />}
+                            {otherUser?.image ? (
+                              <img src={otherUser.image} className="w-full h-full object-cover" />
+                            ) : (
+                              <UserCircle className="text-slate-500 w-6 h-6" />
+                            )}
                           </div>
                           {getPresenceStatus(otherUser?.lastSeen) === "En línea" && (
                             <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-[3px] border-[#050a1f] rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
@@ -387,7 +391,11 @@ export function MessagesClient({
                   <div key={friend.id} className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between group">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center overflow-hidden">
-                        {friend.image ? <img src={friend.image} /> : <UserCircle className="text-slate-500" />}
+                        {friend.image ? (
+                          <img src={friend.image} className="w-full h-full object-cover" />
+                        ) : (
+                          <UserCircle className="text-slate-500 w-5 h-5" />
+                        )}
                       </div>
                       <div>
                         <p className="text-sm font-black text-white uppercase italic">{friend.name}</p>
@@ -467,8 +475,12 @@ export function MessagesClient({
                 >
                   <ArrowLeft />
                 </button>
-                <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-black">
-                  {selectedConv.participants.find((p: any) => p.userId !== currentUser.id)?.user.name[0]}
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-black overflow-hidden">
+                  {selectedConv.participants.find((p: any) => p.userId !== currentUser.id)?.user.image ? (
+                    <img src={selectedConv.participants.find((p: any) => p.userId !== currentUser.id)?.user.image} className="w-full h-full object-cover" />
+                  ) : (
+                    selectedConv.participants.find((p: any) => p.userId !== currentUser.id)?.user.name[0]
+                  )}
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-white uppercase italic tracking-tight">

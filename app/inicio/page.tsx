@@ -59,7 +59,7 @@ export default async function InicioPage() {
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Ganado</p>
                     <div className="flex items-center gap-3 justify-end">
                       <span className="text-4xl font-black text-white tracking-tighter">
-                        {balance} <span className="text-cyan-400">BC</span>
+                        {balance.toFixed(2)} <span className="text-cyan-400">BC</span>
                       </span>
                     </div>
                   </div>
@@ -75,11 +75,30 @@ export default async function InicioPage() {
             </div>
           </div>
 
-          <h2 className="text-3xl font-black text-white uppercase tracking-tighter mb-8 flex items-center gap-3">
-            <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>
-            Featured Partners - Best Offers
-          </h2>
-          <Offerwalls />
+          {/* Placeholder Section requested by user */}
+          <div className="bg-[#0b0e14]/60 border border-white/10 border-dashed rounded-[2.5rem] p-12 md:p-20 text-center">
+            <div className="max-w-md mx-auto space-y-6">
+              <div className="relative w-20 h-20 mx-auto mb-8">
+                <div className="absolute inset-0 bg-cyan-500/20 rounded-3xl blur-2xl animate-pulse"></div>
+                <div className="relative w-full h-full bg-[#050a1f] border border-white/10 rounded-3xl flex items-center justify-center">
+                  <div className="w-3 h-3 bg-cyan-400 rounded-full animate-ping"></div>
+                </div>
+              </div>
+              <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter italic">
+                Sincronizando <span className="text-cyan-400">Nuevos Juegos</span>
+              </h2>
+              <p className="text-slate-500 text-sm md:text-base font-medium leading-relaxed">
+                Nuestros ingenieros están instalando las mejores ofertas y juegos exclusivos para ti. 
+                Vuelve en unos minutos para empezar a ganar monedas reales.
+              </p>
+              <div className="pt-4">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full">
+                  <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full"></div>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Instalación en curso</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

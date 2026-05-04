@@ -26,11 +26,17 @@ export const Footer = () => {
           {/* Brand Section */}
           <div className="col-span-1 lg:col-span-1">
             <Link href="/" className="flex items-center gap-4 mb-8 group">
-              <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 flex items-center justify-center group-hover:bg-cyan-500 transition-colors">
-                <Coins className="text-cyan-400 group-hover:text-slate-950" />
+              <div className="relative">
+                {/* Glow Effect */}
+                <div className="absolute -inset-1.5 bg-cyan-500/20 rounded-full blur-lg group-hover:bg-cyan-500/40 transition-all"></div>
+                
+                {/* Shiny Circular Container */}
+                <div className="relative w-14 h-14 rounded-full border-2 border-white/10 p-0.5 bg-[#0a102a] overflow-hidden shadow-2xl group-hover:border-cyan-500/50 transition-all">
+                  <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover rounded-full" />
+                </div>
               </div>
               <div className="flex flex-col">
-                <span className="text-2xl font-black tracking-tighter text-white">BATTLE<span className="text-cyan-400">COINS</span></span>
+                <span className="text-2xl font-black tracking-tighter text-white uppercase">Battle<span className="text-cyan-400">Coins</span></span>
                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-500">Enterprise</span>
               </div>
             </Link>

@@ -50,7 +50,7 @@ interface RewardsClientProps {
 
 export const RewardsClient = ({ users, currentUserId, userRole, completedMissions }: RewardsClientProps) => {
   const [activeTab, setActiveTab] = useState<"misiones" | "bonos" | "referidos" | null>(null);
-  const [timeLeft, setTimeLeft] = useState({ days: 2, hours: 14, mins: 30, secs: 45 });
+  const [timeLeft, setTimeLeft] = useState({ days: 14, hours: 23, mins: 59, secs: 59 });
   const [copied, setCopied] = useState(false);
   const searchParams = useSearchParams();
   const [loadingMission, setLoadingMission] = useState<string | null>(null);
@@ -299,7 +299,7 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
                     <div className="w-full h-32 md:h-48 bg-gradient-to-t from-slate-500/40 via-slate-500/10 to-transparent rounded-t-[2.5rem] border-x border-t border-slate-500/30 flex flex-col items-center justify-center p-4 shadow-[0_-20px_40px_rgba(148,163,184,0.1)]">
                       <div className="text-slate-300 font-black text-[10px] md:text-sm uppercase mb-2">Premio: +$50.00</div>
                       <span className="text-white font-black uppercase text-[9px] md:text-sm truncate w-full text-center leading-none mb-1">{users[1].name}</span>
-                      <span className="text-slate-400 font-bold text-[8px] md:text-xs">{(users[1].balance/1000).toFixed(2)} pts</span>
+                      <span className="text-slate-400 font-bold text-[8px] md:text-xs">{users[1].points} pts</span>
                       {users[1].id !== currentUserId && (
                         <button 
                           onClick={() => handleAddFriend(users[1].playerId!)}
@@ -324,8 +324,8 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
                     </div>
                     <div className="w-full h-48 md:h-72 bg-gradient-to-t from-yellow-500/50 via-yellow-500/20 to-transparent rounded-t-[3rem] border-x border-t border-yellow-500/40 flex flex-col items-center justify-center p-6 shadow-[0_-30px_60px_rgba(234,179,8,0.2)]">
                       <div className="text-yellow-400 font-black text-xs md:text-xl uppercase mb-4 animate-pulse drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]">Premio: +$100.00</div>
-                      <span className="text-white font-black uppercase text-xs md:text-2xl truncate w-full text-center leading-none mb-2 drop-shadow-xl">{users[0].name}</span>
-                      <span className="text-yellow-100 font-bold text-[10px] md:text-base">{(users[0].balance/1000).toFixed(2)} pts</span>
+                      <span className="text-white font-black uppercase text-[10px] md:text-2xl truncate w-full text-center leading-none mb-2 drop-shadow-xl">{users[0].name}</span>
+                      <span className="text-yellow-100 font-bold text-[10px] md:text-base">{users[0].points} pts</span>
                       {users[0].id !== currentUserId && (
                         <button 
                           onClick={() => handleAddFriend(users[0].playerId!)}
@@ -348,7 +348,7 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
                     <div className="w-full h-24 md:h-36 bg-gradient-to-t from-amber-700/40 via-amber-700/10 to-transparent rounded-t-[2.5rem] border-x border-t border-amber-800/30 flex flex-col items-center justify-center p-4 shadow-[0_-20px_40px_rgba(180,83,9,0.1)]">
                       <div className="text-amber-500 font-black text-[8px] md:text-xs uppercase mb-1">Premio: +$25.00</div>
                       <span className="text-white font-black uppercase text-[9px] md:text-xs truncate w-full text-center leading-none mb-1">{users[2].name}</span>
-                      <span className="text-amber-800 font-bold text-[7px] md:text-[10px]">{(users[2].balance/1000).toFixed(2)} pts</span>
+                      <span className="text-amber-800 font-bold text-[7px] md:text-[10px]">{users[2].points} pts</span>
                       {users[2].id !== currentUserId && (
                         <button 
                           onClick={() => handleAddFriend(users[2].playerId!)}
@@ -373,7 +373,7 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col items-end">
-                        <span className="text-xs font-black text-white italic tracking-tighter">${(user.balance/1000).toFixed(2)}</span>
+                        <span className="text-xs font-black text-white italic tracking-tighter">{user.points} pts</span>
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] mt-1" />
                       </div>
                       {user.id !== currentUserId && (

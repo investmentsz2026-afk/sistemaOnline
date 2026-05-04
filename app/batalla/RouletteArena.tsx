@@ -10,6 +10,8 @@ import { sendFriendRequest } from "@/app/mensajes/actions";
 
 interface RouletteArenaProps {
   initialBalance: number;
+  initialBattles: BattleRoom[];
+  currentUserId: string;
 }
 
 interface BattleRoom {
@@ -31,83 +33,156 @@ const ROOM_TYPES = [
 
 // Añadimos un color dorado para el segmento Acumulado
 const SEGMENT_COLORS = ["#FF6B6B", "#FFD93D", "#6BCB77", "#4D96FF", "#937DC2", "#FF8B13", "#FFD700"];
-const RANDOM_NAMES = ["Carlos_Pro", "Elena_VIP", "X-Gamer_7", "Lucky_Star", "Richie_Win", "Master_BC", "Player_One", "Crypto_King", "Elite_Bet", "Shadow_X"];
+import { getWaitingBattles, createBattle, joinBattle, getBattleParticipants, leaveBattle } from "./actions";
 
-export const RouletteArena = ({ initialBalance }: RouletteArenaProps) => {
+export const RouletteArena = ({ initialBalance, initialBattles, currentUserId }: RouletteArenaProps) => {
   const [balance, setBalance] = useState(initialBalance);
   const [selectedRoomType, setSelectedRoomType] = useState(ROOM_TYPES[0]);
-  const [activeRooms, setActiveRooms] = useState<BattleRoom[]>([]);
+  const [activeRooms, setActiveRooms] = useState<BattleRoom[]>(initialBattles);
   const [currentRoom, setCurrentRoom] = useState<BattleRoom | null>(null);
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [winner, setWinner] = useState<number | null>(null);
-  const [joinedPlayers, setJoinedPlayers] = useState<{name: string, id: string, isUser: boolean}[]>([]);
+  const [joinedPlayers, setJoinedPlayers] = useState<{name: string, id: string, isUser: boolean, userId?: string}[]>([]);
   const [showWinnerModal, setShowWinnerModal] = useState(false);
   const [showLuckMessage, setShowLuckMessage] = useState(false);
   const [showJackpotMessage, setShowJackpotMessage] = useState(false);
   const [errorModal, setErrorModal] = useState<{show: boolean, amountUsd: number} | null>(null);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   
   // Nuevo estado para el pozo acumulado
   const [accumulatedPool, setAccumulatedPool] = useState(0);
 
+  // Refrescar salas reales periódicamente
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (activeRooms.length < 5) {
-        const type = ROOM_TYPES[Math.floor(Math.random() * ROOM_TYPES.length)];
-        const newRoom: BattleRoom = {
-          id: Math.random().toString(36).substr(2, 9),
-          creator: RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)],
-          priceUsd: type.priceUsd,
-          priceCoins: type.priceCoins,
-          joinedCount: Math.floor(Math.random() * 4) + 1,
-          color: type.color
-        };
-        setActiveRooms(prev => [...prev, newRoom]);
+    const interval = setInterval(async () => {
+      if (isSpinning) return;
+      const res = await getWaitingBattles();
+      if (res.success && res.battles) {
+        setActiveRooms(res.battles);
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, [activeRooms]);
+  }, [isSpinning]);
 
-  const handleCreateRoom = () => {
-    if (balance < selectedRoomType.priceCoins) {
+  // Sincronizar participantes de la sala actual en tiempo real
+  useEffect(() => {
+    if (!currentRoom || isSpinning) return;
+
+    const syncParticipants = async () => {
+      const res = await getBattleParticipants(currentRoom.id);
+      if (res.success && res.participants) {
+        setJoinedPlayers(res.participants.map((p: any) => ({
+          ...p,
+          isUser: p.userId === currentUserId
+        })));
+      } else if (res.error === "Batalla no encontrada") {
+        // La sala ha sido cerrada por el creador
+        const creatorName = currentRoom?.creator || "el creador";
+        setCurrentRoom(null);
+        setJoinedPlayers([]);
+        toast.info(`Sala cerrada por ${creatorName}`);
+      }
+    };
+
+    const interval = setInterval(syncParticipants, 3000);
+    return () => clearInterval(interval);
+  }, [currentRoom, isSpinning]);
+
+  // Protección contra salida accidental
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (currentRoom) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [currentRoom]);
+
+  const handleCreateRoom = async () => {
+    if (balance < selectedRoomType.priceCoins && selectedRoomType.priceUsd > 0) {
       setErrorModal({ show: true, amountUsd: selectedRoomType.priceUsd });
       return;
     }
-    setBalance(prev => prev - selectedRoomType.priceCoins);
-    const myRoom: BattleRoom = {
-      id: "MY_ROOM", creator: "TÚ", priceUsd: selectedRoomType.priceUsd,
-      priceCoins: selectedRoomType.priceCoins, joinedCount: 1, color: selectedRoomType.color
-    };
-    setCurrentRoom(myRoom);
-    setJoinedPlayers([{ name: "TÚ", id: "YOU", isUser: true }]);
+
+    // Llamada al servidor para crear la batalla real
+    const res = await createBattle(selectedRoomType.priceUsd, selectedRoomType.priceCoins);
+    
+    if (res.success) {
+      if (selectedRoomType.priceUsd > 0) {
+        setBalance(prev => prev - selectedRoomType.priceCoins);
+      }
+      
+      const myRoom: BattleRoom = {
+        id: res.battleId!, 
+        creator: "TÚ", 
+        priceUsd: selectedRoomType.priceUsd,
+        priceCoins: selectedRoomType.priceCoins, 
+        joinedCount: 1, 
+        color: selectedRoomType.color
+      };
+      setCurrentRoom(myRoom);
+      setJoinedPlayers([{ name: "TÚ", id: "YOU", isUser: true }]);
+      toast.success("Sala creada. Esperando oponentes...");
+    } else {
+      toast.error(res.error || "No se pudo crear la sala");
+    }
   };
 
-  const handleJoinRoom = (room: BattleRoom) => {
-    if (balance < room.priceCoins) {
+  const handleJoinRoom = async (room: BattleRoom) => {
+    if (balance < room.priceCoins && room.priceUsd > 0) {
       setErrorModal({ show: true, amountUsd: room.priceUsd });
       return;
     }
-    setBalance(prev => prev - room.priceCoins);
-    setCurrentRoom(room);
-    const namesPool = [...RANDOM_NAMES].sort(() => Math.random() - 0.5);
-    const existingPlayers = Array.from({ length: room.joinedCount }).map((_, i) => ({
-      name: namesPool[i],
-      id: Math.floor(100000 + Math.random() * 900000).toString(), 
-      isUser: false
-    }));
-    setJoinedPlayers([...existingPlayers, { name: "TÚ", id: "YOU", isUser: true }]);
+
+    const res = await joinBattle(room.id);
+    
+    if (res.success) {
+      if (room.priceUsd > 0) {
+        setBalance(prev => prev - room.priceCoins);
+      }
+      setCurrentRoom(room);
+      // Usar los participantes reales devueltos por el servidor
+      if (res.participants) {
+        setJoinedPlayers(res.participants.map((p: any) => ({
+          ...p,
+          isUser: p.userId === currentUserId
+        })));
+      }
+      toast.success("¡Te has unido a la batalla!");
+    } else {
+      toast.error(res.error || "No se pudo unir a la sala");
+    }
   };
 
+  const handleLeaveRoom = async () => {
+    if (!currentRoom) return;
+    
+    const res = await leaveBattle(currentRoom.id);
+    if (res.success) {
+      setCurrentRoom(null);
+      setJoinedPlayers([]);
+      setShowLeaveConfirm(false);
+      
+      // Actualizar balance local (ya se actualizó en la DB)
+      if (currentRoom.priceUsd > 0) {
+        setBalance(prev => prev + currentRoom.priceCoins);
+      }
+      
+      toast.info(res.roomClosed ? "Sala cerrada y dinero devuelto" : "Has salido de la sala");
+    } else {
+      toast.error(res.error || "No se pudo salir de la sala");
+    }
+  };
+
+  // ELIMINADA LA SIMULACIÓN DE JUGADORES QUE SE UNEN SOLOS
+  // Ahora solo se unen jugadores reales mediante la base de datos.
   useEffect(() => {
     if (currentRoom && joinedPlayers.length < 6 && !isSpinning) {
-      const timeout = setTimeout(() => {
-        const usedNames = joinedPlayers.map(p => p.name);
-        const availableNames = RANDOM_NAMES.filter(n => !usedNames.includes(n));
-        const baseName = availableNames.length > 0 ? availableNames[0] : "Player_" + Math.floor(Math.random() * 100);
-        const uniqueId = Math.floor(100000 + Math.random() * 900000).toString();
-        setJoinedPlayers(prev => [...prev, { name: baseName, id: uniqueId, isUser: false }]);
-      }, 2000);
-      return () => clearTimeout(timeout);
+      // Aquí podrías poner un aviso de "Esperando más jugadores..."
     }
   }, [joinedPlayers, currentRoom, isSpinning]);
 
@@ -256,6 +331,25 @@ export const RouletteArena = ({ initialBalance }: RouletteArenaProps) => {
         </div>
       )}
 
+      {/* MODAL DE CONFIRMACIÓN PARA SALIR */}
+      <AnimatePresence>
+        {showLeaveConfirm && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[400] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
+            <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-[#0b0e14] border border-white/10 rounded-[3rem] p-10 max-w-md w-full text-center shadow-2xl">
+              <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <AlertCircle className="w-10 h-10 text-red-500" />
+              </div>
+              <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-4">¿Abandonar Sala?</h2>
+              <p className="text-slate-400 font-medium mb-8">Si sales ahora, podrías perder tu lugar en la batalla.</p>
+              <div className="grid grid-cols-2 gap-4">
+                <button onClick={() => setShowLeaveConfirm(false)} className="py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-black uppercase tracking-widest hover:bg-white/10 transition-colors">CANCELAR</button>
+                <button onClick={handleLeaveRoom} className="py-4 rounded-2xl bg-red-500 text-white font-black uppercase tracking-widest hover:bg-red-600 transition-colors">SÍ, SALIR</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {currentRoom && (
         <div className="bg-[#0b0e14]/60 border border-white/5 rounded-[4rem] pt-32 pb-10 px-6 md:p-16 backdrop-blur-3xl relative shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500">
           
@@ -322,8 +416,8 @@ export const RouletteArena = ({ initialBalance }: RouletteArenaProps) => {
                 )}
               </div>
 
-              {/* PANEL DE PREMIO TOTAL */}
-              <div className="bg-white/5 border border-white/10 rounded-[3rem] p-8 relative overflow-hidden group transition-all hover:bg-white/[0.08]">
+                {/* PANEL DE PREMIO TOTAL */}
+              <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 relative overflow-hidden group transition-all hover:bg-white/[0.08]">
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-2">
                     <Trophy className="w-4 h-4 text-yellow-500" />
@@ -352,7 +446,14 @@ export const RouletteArena = ({ initialBalance }: RouletteArenaProps) => {
               </div>
 
               <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-6 space-y-4">
-                <div className="flex items-center justify-between mb-2"><h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Sala ({joinedPlayers.length}/6)</h4><div className="flex gap-1.5">{[...Array(6)].map((_, i) => (<div key={i} className={cn("w-2.5 h-2.5 rounded-full", i < joinedPlayers.length ? "bg-emerald-500" : "bg-white/10")} />))}</div></div>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Sala ({joinedPlayers.length}/6)</h4>
+                  <div className="flex gap-1.5">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className={cn("w-2.5 h-2.5 rounded-full", i < joinedPlayers.length ? "bg-emerald-500" : "bg-white/10")} />
+                    ))}
+                  </div>
+                </div>
                 <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
                   {joinedPlayers.map((player, i) => (
                     <div key={i} className={cn("flex items-center justify-between p-4 rounded-2xl border transition-all", player.isUser ? "bg-cyan-500/10 border-cyan-500/30" : "bg-white/5 border-white/5")}>
@@ -378,6 +479,17 @@ export const RouletteArena = ({ initialBalance }: RouletteArenaProps) => {
                     </div>
                   ))}
                 </div>
+                {/* Botón para Salir de la Sala */}
+                {!isSpinning && (
+                  <div className="pt-4 mt-2 border-t border-white/5">
+                    <button 
+                      onClick={() => setShowLeaveConfirm(true)}
+                      className="w-full py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest transition-all border border-red-500/20"
+                    >
+                      ABANDONAR SALA
+                    </button>
+                  </div>
+                )}
               </div>
               
               {/* Botón Escritorio */}

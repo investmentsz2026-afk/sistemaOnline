@@ -19,6 +19,38 @@ export default async function BatallaPage() {
     select: { balance: true }
   });
 
+  // Obtener batallas reales en espera
+  let formattedBattles: any[] = [];
+  
+  try {
+    // Usamos el acceso directo de Prisma (singularizado y en minúscula según el estándar)
+    const battleModel = (prisma as any).battle || (prisma as any).Battle;
+    
+    if (battleModel) {
+      const waitingBattles = await battleModel.findMany({
+        where: { status: "WAITING" },
+        include: {
+          creator: { select: { name: true } },
+          participants: true
+        },
+        orderBy: { createdAt: "desc" },
+        take: 10
+      });
+
+      formattedBattles = waitingBattles.map((b: any) => ({
+        id: b.id,
+        creator: b.creator.name || "Jugador",
+        priceUsd: b.priceUsd,
+        priceCoins: b.priceCoins,
+        joinedCount: b.participants.length,
+        color: b.priceUsd >= 5 ? "from-yellow-500 to-amber-600" : 
+               b.priceUsd >= 1 ? "from-slate-400 to-slate-600" : "from-amber-700 to-amber-900"
+      }));
+    }
+  } catch (err) {
+    console.error("Error al obtener batallas:", err);
+  }
+
   const balance = user?.balance || 0;
 
   return (
@@ -44,7 +76,11 @@ export default async function BatallaPage() {
           </div>
 
           {/* Área de Juego (Client Side) */}
-          <RouletteArena initialBalance={balance} />
+          <RouletteArena 
+            initialBalance={balance} 
+            initialBattles={formattedBattles} 
+            currentUserId={session.user.id}
+          />
 
           {/* Información de Juego Justo */}
           <div className="mt-20 max-w-3xl mx-auto bg-white/5 border border-white/10 rounded-[2rem] p-6 md:p-8 backdrop-blur-xl">

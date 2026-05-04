@@ -13,7 +13,26 @@ export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { data: session } = useSession();
+  const [userImage, setUserImage] = useState<string | null>(null);
   const pathname = usePathname();
+
+  // Fetch real-time user data to bypass stale session
+  useEffect(() => {
+    if (session?.user?.id) {
+      const fetchUserData = async () => {
+        try {
+          const res = await fetch(`/api/user/profile?id=${session.user.id}`);
+          if (res.ok) {
+            const data = await res.json();
+            setUserImage(data.image);
+          }
+        } catch (err) {
+          console.error("Error fetching fresh user image", err);
+        }
+      };
+      fetchUserData();
+    }
+  }, [session?.user?.id]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -65,11 +84,16 @@ export const Navbar = () => {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 md:gap-4 group">
             <div className="relative">
-              <div className="absolute -inset-1 md:-inset-2 bg-cyan-500/20 rounded-full blur-xl group-hover:bg-cyan-500/40 transition-all"></div>
-              <Coins className="w-6 h-6 md:w-8 md:h-8 text-cyan-400 relative z-10" />
+              {/* Energy Ring Effect */}
+              <div className="absolute -inset-1.5 bg-gradient-to-tr from-cyan-500 via-blue-600 to-purple-600 rounded-full blur-md opacity-40 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500 animate-pulse"></div>
+              
+              {/* Shiny Container */}
+              <div className="relative w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-white/20 p-0.5 bg-[#050a1f] overflow-hidden shadow-[0_0_20px_rgba(34,211,238,0.3)] group-hover:shadow-cyan-500/50 transition-all">
+                <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover rounded-full" />
+              </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-lg md:text-2xl font-black tracking-tighter text-white leading-none">BATTLE<span className="text-cyan-400">COINS</span></span>
+              <span className="text-lg md:text-2xl font-black tracking-tighter text-white leading-none uppercase">Battle<span className="text-cyan-400">Coins</span></span>
               <span className="hidden sm:block text-[8px] md:text-[10px] font-bold tracking-[0.4em] text-slate-500 uppercase">Enterprise</span>
             </div>
           </Link>
@@ -117,13 +141,13 @@ export const Navbar = () => {
                   <div className="flex flex-col leading-none">
                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Balance</span>
                     <span className="text-sm font-black text-white tracking-tighter">
-                      {(session.user as any).balance || 0} <span className="text-cyan-400">BC</span>
+                      {(Number((session.user as any).balance) || 0).toFixed(2)} <span className="text-cyan-400">BC</span>
                     </span>
                   </div>
                 </motion.div>
 
                 <NotificationBell />
-                <UserMenu user={session.user as any} showName={true} />
+                <UserMenu user={{ ...session.user, image: userImage } as any} showName={true} />
               </div>
             ) : (
               <>
@@ -160,12 +184,12 @@ export const Navbar = () => {
                 <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2.5 py-1.5 rounded-full backdrop-blur-md">
                   <Coins className="w-3.5 h-3.5 text-cyan-400" />
                   <span className="text-[11px] font-black text-white tracking-tighter">
-                    {(session.user as any).balance || 0}
+                    {(Number((session.user as any).balance) || 0).toFixed(2)}
                   </span>
                 </div>
                 
                 <NotificationBell />
-                <UserMenu user={session.user as any} showName={false} />
+                <UserMenu user={{ ...session.user, image: userImage } as any} showName={false} />
               </div>
             ) : (
               <button 

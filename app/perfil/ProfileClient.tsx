@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Shield, Star, Trophy, Settings2, ArrowRight, CheckCircle2, Mail, Edit3, ChevronRight, Zap, ArrowLeft, Hash, Copy } from "lucide-react";
+import { User, Shield, Star, Trophy, Settings2, ArrowRight, CheckCircle2, Mail, Edit3, ChevronRight, Zap, ArrowLeft, Hash, Copy, Camera, Loader2 } from "lucide-react";
 import { BackButton } from "@/components/ui/motion/back-button";
 import { ProfileForm } from "./ProfileForm";
+import { updateProfileImage } from "../configuracion/actions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -22,11 +23,39 @@ interface ProfileClientProps {
 
 export const ProfileClient = ({ user }: ProfileClientProps) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [currentImage, setCurrentImage] = useState<string | null>(user.image);
 
   const handleCopyId = () => {
     if (user.playerId) {
       navigator.clipboard.writeText(user.playerId);
       toast.success("¡Player ID copiado!");
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("La imagen es demasiado grande (máx 2MB)");
+        return;
+      }
+
+      setIsUploading(true);
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64 = reader.result as string;
+        setCurrentImage(base64);
+        
+        const res = await updateProfileImage(base64);
+        if (res.success) {
+          toast.success("¡Foto de perfil actualizada!");
+        } else {
+          toast.error("Error al guardar la foto");
+        }
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -67,20 +96,44 @@ export const ProfileClient = ({ user }: ProfileClientProps) => {
               </div>
 
               <div className="flex flex-col md:flex-row items-center gap-8 mb-12">
-                <div className="relative">
+                <div className="relative group/avatar cursor-pointer" onClick={() => document.getElementById('profile-photo-upload')?.click()}>
                   <div className="absolute -inset-4 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full blur-2xl opacity-20 animate-pulse"></div>
-                  <div className="relative w-32 h-32 rounded-full border-4 border-white/10 p-1 bg-slate-950 overflow-hidden">
-                    {user.image ? (
-                      <img src={user.image} className="w-full h-full object-cover" />
+                  <div className="relative w-32 h-32 rounded-full border-4 border-white/10 p-1 bg-slate-950 overflow-hidden group-hover/avatar:border-cyan-500/50 transition-all">
+                    {isUploading ? (
+                      <div className="w-full h-full flex items-center justify-center bg-slate-900">
+                        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+                      </div>
+                    ) : currentImage ? (
+                      <img src={currentImage} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-900 flex items-center justify-center">
                         <User className="w-16 h-16 text-slate-700" />
                       </div>
                     )}
+                    
+                    {/* Overlay de cámara */}
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity">
+                      <Camera className="w-8 h-8 text-white" />
+                    </div>
                   </div>
-                  <div className="absolute -bottom-2 -right-2 bg-cyan-500 text-white w-10 h-10 rounded-2xl flex items-center justify-center font-black text-lg shadow-xl border-4 border-[#0b0e14]">
+                  
+                  {/* Botón flotante de cámara */}
+                  <div className="absolute -bottom-1 -right-1 bg-cyan-500 text-slate-950 w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-[#050a1f] z-20">
+                    <Camera className="w-4 h-4" />
+                  </div>
+
+                  {/* Nivel del usuario (Restaurado) */}
+                  <div className="absolute -bottom-2 -left-2 bg-[#050a1f] text-white w-9 h-9 rounded-2xl flex items-center justify-center font-black text-sm shadow-xl border-2 border-white/10 z-20">
                     {level}
                   </div>
+
+                  <input 
+                    type="file" 
+                    id="profile-photo-upload" 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
                 </div>
 
                 <div className="text-center md:text-left">

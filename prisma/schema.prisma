@@ -61,6 +61,11 @@ model User {
   // Finanzas
   recharges         Recharge[]
 
+  // Batallas
+  battlesCreated    Battle[]          @relation("BattleCreator")
+  battlesWon        Battle[]          @relation("BattleWinner")
+  participations    BattleParticipant[]
+
   @@map("users")
 }
 
@@ -214,4 +219,37 @@ model Notification {
   createdAt DateTime @default(now())
 
   @@map("notifications")
+}
+
+model Battle {
+  id            String    @id @default(cuid())
+  creatorId     String
+  creator       User      @relation("BattleCreator", fields: [creatorId], references: [id])
+  priceUsd      Float
+  priceCoins    Float
+  status        String    @default("WAITING") // WAITING, IN_PROGRESS, COMPLETED, CANCELLED
+  winnerId      String?
+  winner        User?     @relation("BattleWinner", fields: [winnerId], references: [id])
+  totalPrize    Float     @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  participants  BattleParticipant[]
+
+  @@map("battles")
+}
+
+model BattleParticipant {
+  id        String   @id @default(cuid())
+  battleId  String
+  userId    String
+  position  Int      // Posición en la ruleta (0-5)
+  createdAt DateTime @default(now())
+
+  battle    Battle   @relation(fields: [battleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([battleId, userId])
+  @@unique([battleId, position])
+  @@map("battle_participants")
 }

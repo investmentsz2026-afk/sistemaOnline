@@ -40,7 +40,10 @@ export default async function ConfiguracionPage() {
           <div className="absolute top-0 left-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -translate-y-1/2 -translate-x-1/3"></div>
           
           <div className="relative z-10">
-            <SettingsForm userId={session.user.id!} />
+            <SettingsForm 
+              userId={session.user.id!} 
+              initialImage={user?.image || null}
+            />
           </div>
         </div>
 

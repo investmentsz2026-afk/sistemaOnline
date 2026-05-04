@@ -3,15 +3,18 @@
 import { useState, useEffect } from "react";
 import { Moon, Sun, Bell, Globe, Save, Loader2, Volume2, Smartphone } from "lucide-react";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
+import { updateProfileImage } from "./actions";
+import { Camera, User as UserIcon } from "lucide-react";
 
 interface SettingsFormProps {
   userId: string;
+  initialImage: string | null;
 }
 
-export const SettingsForm = ({ userId }: SettingsFormProps) => {
+export const SettingsForm = ({ userId, initialImage }: SettingsFormProps) => {
   const [isMounted, setIsMounted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -22,6 +25,10 @@ export const SettingsForm = ({ userId }: SettingsFormProps) => {
   const [language, setLanguage] = useState("es");
   const [pushNotifications, setPushNotifications] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  
+  // Profile Image States
+  const [imagePreview, setImagePreview] = useState<string | null>(initialImage);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Load from local storage on mount
   useEffect(() => {
@@ -39,28 +46,104 @@ export const SettingsForm = ({ userId }: SettingsFormProps) => {
     }
   }, [userId]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSubmitting(true);
 
-    const newSettings = {
-      language,
-      pushNotifications,
-      soundEnabled,
-    };
-
-    // Simulate network delay for realism
-    setTimeout(() => {
+    try {
+      // 1. Guardar ajustes locales
+      const newSettings = {
+        language,
+        pushNotifications,
+        soundEnabled,
+      };
       localStorage.setItem(`settings_${userId}`, JSON.stringify(newSettings));
+
+      // 2. Si hay una nueva imagen, subirla al servidor
+      if (imagePreview) {
+        const result = await updateProfileImage(imagePreview);
+        if (!result.success) {
+          toast.error("Error al guardar la foto de perfil");
+        }
+      }
+
       toast.success("Configuración guardada exitosamente.");
+    } catch (error) {
+      toast.error("Ocurrió un error al guardar.");
+    } finally {
       setIsSubmitting(false);
-    }, 800);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { // Límite de 2MB
+        toast.error("La imagen es demasiado grande (máx 2MB)");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   if (!isMounted) return null; // Avoid hydration mismatch
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       
+      {/* SECCIÓN: FOTO DE PERFIL */}
+      <section className="space-y-6">
+        <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-white/10 pb-3">
+          <Camera className="w-5 h-5 text-indigo-400" />
+          Foto de Perfil
+        </h3>
+        
+        <div className="flex flex-col items-center gap-6 p-6 bg-white/5 rounded-3xl border border-white/5 group relative overflow-hidden">
+          <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          
+          <div className="relative group/avatar cursor-pointer" onClick={() => document.getElementById('photo-upload')?.click()}>
+            <div className="w-32 h-32 rounded-full border-4 border-white/10 overflow-hidden shadow-2xl relative">
+              {imagePreview ? (
+                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-slate-900 flex items-center justify-center">
+                  <UserIcon className="w-16 h-16 text-slate-700" />
+                </div>
+              )}
+              
+              {/* Overlay hover */}
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-all flex items-center justify-center">
+                <Camera className="w-8 h-8 text-white" />
+              </div>
+            </div>
+            <div className="absolute bottom-0 right-0 p-2 bg-indigo-500 rounded-full shadow-xl border-2 border-[#0b0e14]">
+              <Camera className="w-4 h-4 text-white" />
+            </div>
+          </div>
+
+          <div className="text-center space-y-2">
+            <input 
+              type="file" 
+              id="photo-upload" 
+              className="hidden" 
+              accept="image/*"
+              onChange={handleFileChange}
+            />
+            <button 
+              onClick={() => document.getElementById('photo-upload')?.click()}
+              className="px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-full text-[10px] font-black text-white uppercase tracking-widest transition-all"
+            >
+              Cambiar Foto
+            </button>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">Formato JPG, PNG (Máx 2MB)</p>
+          </div>
+        </div>
+      </section>
+
       {/* Aspecto / Tema */}
       <section className="space-y-4">
         <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-white/10 pb-3">

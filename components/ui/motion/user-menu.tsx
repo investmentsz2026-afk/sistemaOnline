@@ -27,6 +27,7 @@ interface UserMenuProps {
     name?: string | null;
     email?: string | null;
     role?: string;
+    image?: string | null;
   };
   showName?: boolean;
 }
@@ -72,8 +73,14 @@ export const UserMenu = ({ user, showName = true }: UserMenuProps) => {
             />
             
             <div className="relative w-10 h-10 rounded-full bg-[#020617] border border-white/10 flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform">
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-600/10" />
-              <User className="h-5 w-5 text-cyan-400 relative z-10" />
+              {user.image ? (
+                <img src={user.image} className="w-full h-full object-cover" />
+              ) : (
+                <>
+                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-blue-600/10" />
+                  <User className="h-5 w-5 text-cyan-400 relative z-10" />
+                </>
+              )}
             </div>
             
             {/* Status Indicator */}

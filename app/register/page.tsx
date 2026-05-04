@@ -85,13 +85,19 @@ export default function RegisterPage() {
 
           <div className="relative z-10 max-w-lg">
             <AnimatedContainer direction="right" delay={0.2}>
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-16 h-16 bg-black rounded-2xl border border-white/10 flex items-center justify-center shadow-2xl text-cyan-400">
-                  <Coins className="h-10 w-10" strokeWidth={1.5} />
+              <div className="flex items-center gap-6 mb-8">
+                <div className="relative">
+                  {/* Neon Glow */}
+                  <div className="absolute -inset-4 bg-cyan-500/25 rounded-full blur-3xl animate-pulse"></div>
+                  
+                  {/* Sphere Container */}
+                  <div className="relative w-24 h-24 rounded-full border-4 border-white/10 p-1 bg-black overflow-hidden shadow-[0_0_50px_rgba(34,211,238,0.4)]">
+                    <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover rounded-full" />
+                  </div>
                 </div>
                 <div>
-                  <h1 className="text-4xl font-black tracking-tighter text-white uppercase leading-none">Battle</h1>
-                  <h1 className="text-4xl font-black tracking-tighter text-cyan-400 uppercase leading-none">Coins</h1>
+                  <h1 className="text-5xl font-black tracking-tighter text-white uppercase leading-none">Battle</h1>
+                  <h1 className="text-5xl font-black tracking-tighter text-cyan-400 uppercase leading-none">Coins</h1>
                 </div>
               </div>
               
@@ -132,6 +138,7 @@ export default function RegisterPage() {
               alt="Gaming Background" 
               fill 
               className="object-cover opacity-20 grayscale-[0.3] pointer-events-none"
+              sizes="100vw"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-[#020617]/90 via-[#020617]/70 to-[#020617]"></div>
           </div>
@@ -139,8 +146,11 @@ export default function RegisterPage() {
           <div className="relative z-10 w-full max-w-sm">
             {/* Mobile Only Logo */}
             <div className="lg:hidden flex flex-col items-center mb-4">
-               <div className="w-8 h-8 bg-black rounded-lg border border-white/10 flex items-center justify-center mb-2">
-                  <Coins className="text-cyan-400 h-4 w-4" />
+                <div className="relative mb-2">
+                  <div className="absolute -inset-2 bg-cyan-500/20 rounded-full blur-lg"></div>
+                  <div className="relative w-12 h-12 rounded-full border-2 border-white/10 p-0.5 bg-black overflow-hidden shadow-lg">
+                    <img src="/logo.jpg" alt="Logo" className="w-full h-full object-cover rounded-full" />
+                  </div>
                 </div>
                 <h1 className="text-md font-black tracking-tighter text-white uppercase leading-none">Battle <span className="text-cyan-400">Coins</span></h1>
             </div>
