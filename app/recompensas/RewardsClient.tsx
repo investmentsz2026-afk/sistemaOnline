@@ -36,7 +36,9 @@ interface LeaderboardUser {
   name: string | null;
   image: string | null;
   balance: number;
-  playerId?: string;
+  playerId: string | null;
+  points: number;
+  wins: number;
 }
 
 interface RewardsClientProps {
