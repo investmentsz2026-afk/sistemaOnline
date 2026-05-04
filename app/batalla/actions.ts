@@ -56,7 +56,7 @@ export async function getWaitingBattles() {
 
     return {
       success: true,
-      battles: battles.map(b => ({
+      battles: battles.map((b: any) => ({
         id: b.id,
         creator: b.creator.name || "Jugador",
         priceUsd: b.priceUsd,
