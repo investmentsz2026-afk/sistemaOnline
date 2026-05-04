@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import prisma from "@/lib/prisma";
 import { Navbar } from "@/components/landing/Navbar";
 import { MobileBottomNav } from "@/components/landing/MobileBottomNav";
 import { SettingsForm } from "./SettingsForm";
@@ -12,6 +13,11 @@ export default async function ConfiguracionPage() {
   if (!session?.user) {
     redirect("/login");
   }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { image: true }
+  });
 
   return (
     <main className="min-h-screen bg-[#050a1f] text-white overflow-x-hidden pb-24 transition-colors duration-500" id="config-main">

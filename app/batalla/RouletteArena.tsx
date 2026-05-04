@@ -116,8 +116,9 @@ export const RouletteArena = ({ initialBalance, initialBattles, currentUserId }:
         setBalance(prev => prev - selectedRoomType.priceCoins);
       }
       
+      const battleId = (res as any).battleId;
       const myRoom: BattleRoom = {
-        id: res.battleId!, 
+        id: battleId, 
         creator: "TÚ", 
         priceUsd: selectedRoomType.priceUsd,
         priceCoins: selectedRoomType.priceCoins, 

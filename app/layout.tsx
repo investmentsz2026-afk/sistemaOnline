@@ -34,7 +34,6 @@ export default function RootLayout({
     >
       <body 
         className="min-h-full flex flex-col font-sans bg-white dark:bg-[#020617] text-slate-900 dark:text-white transition-colors duration-300"
-        suppressHydrationWarning
       >
         <ThemeProvider>
           <AuthProvider>
