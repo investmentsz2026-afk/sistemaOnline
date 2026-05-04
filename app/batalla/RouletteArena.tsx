@@ -71,12 +71,12 @@ export const RouletteArena = ({ initialBalance, initialBattles, currentUserId }:
 
     const syncParticipants = async () => {
       const res = await getBattleParticipants(currentRoom.id);
-      if (res.success && res.participants) {
-        setJoinedPlayers(res.participants.map((p: any) => ({
+      if (res.success && (res as any).participants) {
+        setJoinedPlayers((res as any).participants.map((p: any) => ({
           ...p,
           isUser: p.userId === currentUserId
         })));
-      } else if (res.error === "Batalla no encontrada") {
+      } else if ((res as any).error === "Batalla no encontrada") {
         // La sala ha sido cerrada por el creador
         const creatorName = currentRoom?.creator || "el creador";
         setCurrentRoom(null);
@@ -129,7 +129,7 @@ export const RouletteArena = ({ initialBalance, initialBattles, currentUserId }:
       setJoinedPlayers([{ name: "TÚ", id: "YOU", isUser: true }]);
       toast.success("Sala creada. Esperando oponentes...");
     } else {
-      toast.error(res.error || "No se pudo crear la sala");
+      toast.error((res as any).error || "No se pudo crear la sala");
     }
   };
 
@@ -173,9 +173,9 @@ export const RouletteArena = ({ initialBalance, initialBattles, currentUserId }:
         setBalance(prev => prev + currentRoom.priceCoins);
       }
       
-      toast.info(res.roomClosed ? "Sala cerrada y dinero devuelto" : "Has salido de la sala");
+      toast.info((res as any).roomClosed ? "Sala cerrada y dinero devuelto" : "Has salido de la sala");
     } else {
-      toast.error(res.error || "No se pudo salir de la sala");
+      toast.error((res as any).error || "No se pudo salir de la sala");
     }
   };
 
