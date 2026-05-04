@@ -47,7 +47,7 @@ export function BilleteraTabs({ balance }: BilleteraTabsProps) {
   };
 
   return (
-    <PayPalScriptProvider options={{ "client-id": "test" }}>
+    <PayPalScriptProvider options={{ clientId: "test" }}>
       <div className="space-y-6">
         {/* Tab Switcher */}
         <div className="flex p-1 bg-white/5 rounded-2xl border border-white/10 max-w-sm mx-auto">
