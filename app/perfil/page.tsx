@@ -21,7 +21,8 @@ export default async function PerfilPage() {
       email: true, 
       role: true,
       balance: true,
-      image: true
+      image: true,
+      playerId: true
     }
   });
 
@@ -52,7 +53,8 @@ export default async function PerfilPage() {
           email: dbUser.email,
           role: dbUser.role.toString(),
           balance: dbUser.balance,
-          image: dbUser.image
+          image: dbUser.image,
+          playerId: dbUser.playerId
         }} />
 
       </div>

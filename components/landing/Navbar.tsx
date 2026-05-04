@@ -7,6 +7,7 @@ import { Coins, Menu, X, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { UserMenu } from "@/components/ui/motion/user-menu";
+import { NotificationBell } from "@/components/social/NotificationBell";
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,6 +28,7 @@ export const Navbar = () => {
       if (isAdminOrMod) {
         return [
           { label: "INICIO", href: "/inicio" },
+          { label: "CHAT", href: "/mensajes" },
           { label: "RECOMPENSAS", href: "/recompensas" },
           { label: "PANEL ADMIN", href: "/dashboard" },
         ];
@@ -35,9 +37,10 @@ export const Navbar = () => {
       return [
         { label: "GANE", href: "/inicio" },
         { label: "BATALLA", href: "/batalla" },
+        { label: "CHAT", href: "/mensajes" },
         { label: "MIS OFERTAS", href: "/ofertas" },
-        { label: "RETIRO", href: "/retiro" },
         { label: "RECOMPENSAS", href: "/recompensas" },
+        { label: "RETIRO", href: "/retiro" },
       ];
     }
 
@@ -60,14 +63,14 @@ export const Navbar = () => {
       >
         <div className={`transition-all duration-500 border border-white/5 shadow-2xl rounded-[1.2rem] md:rounded-[1.5rem] px-4 md:px-8 py-2 md:py-4 flex items-center justify-between ${scrolled ? 'bg-[#050a1f]/80 backdrop-blur-2xl' : 'bg-[#050a1f]/40 backdrop-blur-md'}`}>
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-4 group">
+          <Link href="/" className="flex items-center gap-2 md:gap-4 group">
             <div className="relative">
-              <div className="absolute -inset-2 bg-cyan-500/20 rounded-full blur-xl group-hover:bg-cyan-500/40 transition-all"></div>
-              <Coins className="w-8 h-8 text-cyan-400 relative z-10" />
+              <div className="absolute -inset-1 md:-inset-2 bg-cyan-500/20 rounded-full blur-xl group-hover:bg-cyan-500/40 transition-all"></div>
+              <Coins className="w-6 h-6 md:w-8 md:h-8 text-cyan-400 relative z-10" />
             </div>
             <div className="flex flex-col">
-              <span className="text-2xl font-black tracking-tighter text-white leading-none">BATTLE<span className="text-cyan-400">COINS</span></span>
-              <span className="text-[10px] font-bold tracking-[0.4em] text-slate-500 uppercase">Enterprise</span>
+              <span className="text-lg md:text-2xl font-black tracking-tighter text-white leading-none">BATTLE<span className="text-cyan-400">COINS</span></span>
+              <span className="hidden sm:block text-[8px] md:text-[10px] font-bold tracking-[0.4em] text-slate-500 uppercase">Enterprise</span>
             </div>
           </Link>
 
@@ -119,6 +122,7 @@ export const Navbar = () => {
                   </div>
                 </motion.div>
 
+                <NotificationBell />
                 <UserMenu user={session.user as any} showName={true} />
               </div>
             ) : (
@@ -152,13 +156,15 @@ export const Navbar = () => {
                   </button>
                 )}
                 
-                {/* Mobile Coin Counter */}
-                <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full backdrop-blur-md">
+                {/* Mobile Coin Counter (Compact) */}
+                <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 px-2.5 py-1.5 rounded-full backdrop-blur-md">
                   <Coins className="w-3.5 h-3.5 text-cyan-400" />
-                  <span className="text-xs font-black text-white tracking-tighter">
+                  <span className="text-[11px] font-black text-white tracking-tighter">
                     {(session.user as any).balance || 0}
                   </span>
                 </div>
+                
+                <NotificationBell />
                 <UserMenu user={session.user as any} showName={false} />
               </div>
             ) : (

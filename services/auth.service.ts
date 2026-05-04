@@ -17,6 +17,15 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Generar un Player ID de 6 dígitos único
+    let playerId = "";
+    let isUnique = false;
+    while (!isUnique) {
+      playerId = Math.floor(100000 + Math.random() * 900000).toString();
+      const existing = await prisma.user.findUnique({ where: { playerId } });
+      if (!existing) isUnique = true;
+    }
+
     const user = await prisma.user.create({
       data: {
         name,
@@ -25,6 +34,7 @@ export class AuthService {
         role,
         phoneNumber,
         company,
+        playerId,
       },
     });
 

@@ -242,9 +242,28 @@ export const RetiroOptions = ({ balance }: RetiroOptionsProps) => {
                   <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Estás retirando <span className="text-white">${selectedAmount}.00 USD</span> vía {selectedMethod?.name}</p>
                 </div>
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Datos de Cobro (Email / Wallet / Cuenta)</label>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">
+                    {selectedMethod?.id === 'visa' ? 'Número de Tarjeta' : 
+                     selectedMethod?.id === 'paypal' ? 'Correo Electrónico de PayPal' :
+                     selectedMethod?.id === 'venmo' ? 'Usuario de Venmo' :
+                     selectedMethod?.id === 'binance' || selectedMethod?.id === 'btc' || selectedMethod?.id === 'ltc' ? 'Dirección de Billetera (Wallet)' :
+                     'Datos de Cobro'}
+                  </label>
                   <div className="relative">
-                    <input autoFocus type="text" value={accountInfo} onChange={(e) => setAccountInfo(e.target.value)} placeholder={`Ej: tu-correo@paypal.com o Wallet ID`} className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-5 text-white font-bold placeholder:text-slate-700 focus:outline-none focus:border-emerald-500/50 transition-all" />
+                    <input 
+                      autoFocus 
+                      type="text" 
+                      value={accountInfo} 
+                      onChange={(e) => setAccountInfo(e.target.value)} 
+                      placeholder={
+                        selectedMethod?.id === 'visa' ? 'xxxx xxxx xxxx xxxx' : 
+                        selectedMethod?.id === 'paypal' ? 'tu-correo@paypal.com' :
+                        selectedMethod?.id === 'venmo' ? '@usuario_venmo' :
+                        selectedMethod?.id === 'binance' || selectedMethod?.id === 'btc' || selectedMethod?.id === 'ltc' ? '0x... o Wallet ID' :
+                        'Ingresa tus datos aquí'
+                      } 
+                      className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-5 text-white font-bold placeholder:text-slate-700 focus:outline-none focus:border-emerald-500/50 transition-all" 
+                    />
                   </div>
                   <p className="text-[10px] text-yellow-500/70 font-bold italic text-center px-4"> * Asegúrate de que los datos sean correctos. El equipo de pagos no se hace responsable por datos erróneos. </p>
                 </div>

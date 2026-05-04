@@ -29,10 +29,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       const existingUser = await prisma.user.findUnique({
         where: { id: token.sub },
-        select: { role: true, balance: true }
+        select: { role: true, balance: true, isActive: true }
       });
 
-      if (!existingUser) return token;
+      if (!existingUser || !existingUser.isActive) return null;
 
       token.role = existingUser.role;
       token.balance = existingUser.balance;
@@ -65,7 +65,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               return null;
             }
             if (!user.isActive) {
-              console.log("Error: Usuario inactivo");
+              console.log("ALERTA: Intento de acceso de usuario BLOQUEADO:", email);
               return null;
             }
 

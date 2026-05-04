@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Gamepad2, Percent, Layers, DollarSign, Medal } from "lucide-react";
+import { Gamepad2, Percent, Layers, DollarSign, Medal, MessageSquare, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSession } from "next-auth/react";
 
@@ -20,8 +20,8 @@ export const MobileBottomNav = () => {
   const routes = [
     { label: "GANE", icon: Gamepad2, href: "/inicio" },
     { label: "BATALLA", icon: Percent, href: "/batalla" },
-    { label: "OFERTAS", icon: Layers, href: "/ofertas" },
-    { label: "RETIRO", icon: DollarSign, href: "/retiro" },
+    { label: "CHAT", icon: MessageSquare, href: "/mensajes" },
+    { label: "BILLETERA", icon: Wallet, href: "/retiro" },
     { label: "RANKING", icon: Medal, href: "/recompensas" },
   ];
 

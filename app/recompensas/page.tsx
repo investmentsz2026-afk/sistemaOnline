@@ -18,13 +18,16 @@ export default async function RecompensasPage() {
       role: "CLIENT", // Filtramos para excluir Admin, Mod, etc.
       isActive: true 
     },
-    orderBy: { balance: "desc" },
+    orderBy: { points: "desc" }, // Ordenamos por PUNTOS para la competitividad
     take: 10,
     select: { 
       id: true, 
       name: true, 
       image: true, 
-      balance: true 
+      balance: true,
+      points: true,
+      wins: true,
+      playerId: true
     }
   });
 

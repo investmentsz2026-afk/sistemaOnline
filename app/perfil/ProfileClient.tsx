@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Shield, Star, Trophy, Settings2, ArrowRight, CheckCircle2, Mail, Edit3, ChevronRight, Zap, ArrowLeft } from "lucide-react";
+import { User, Shield, Star, Trophy, Settings2, ArrowRight, CheckCircle2, Mail, Edit3, ChevronRight, Zap, ArrowLeft, Hash, Copy } from "lucide-react";
 import { BackButton } from "@/components/ui/motion/back-button";
 import { ProfileForm } from "./ProfileForm";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface ProfileClientProps {
   user: {
@@ -15,11 +16,19 @@ interface ProfileClientProps {
     role: string;
     balance: number;
     image: string | null;
+    playerId: string | null;
   };
 }
 
 export const ProfileClient = ({ user }: ProfileClientProps) => {
   const [isEditing, setIsEditing] = useState(false);
+
+  const handleCopyId = () => {
+    if (user.playerId) {
+      navigator.clipboard.writeText(user.playerId);
+      toast.success("¡Player ID copiado!");
+    }
+  };
 
   // Lógica de Niveles: Cada 1000 monedas = 1 Nivel
   const level = Math.floor(user.balance / 1000);
@@ -75,13 +84,28 @@ export const ProfileClient = ({ user }: ProfileClientProps) => {
                 </div>
 
                 <div className="text-center md:text-left">
-                  <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
-                    <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase">{user.name || "Usuario"}</h1>
-                    <div className={cn("px-3 py-1 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest", rank.bg, rank.color)}>
-                      Rango {rank.name}
+                  <div className="flex flex-col md:flex-row md:items-center gap-3 mb-4">
+                    <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase leading-none">{user.name || "Usuario"}</h1>
+                    <div className="flex items-center gap-2">
+                      <div className={cn("px-3 py-1 rounded-full border border-white/10 text-[10px] font-black uppercase tracking-widest", rank.bg, rank.color)}>
+                        Rango {rank.name}
+                      </div>
+                      
+                      {/* PLAYER ID BADGE */}
+                      <button 
+                        onClick={handleCopyId}
+                        className="group/id flex items-center gap-2 px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full hover:bg-cyan-500 hover:border-cyan-500 transition-all"
+                        title="Copiar Player ID"
+                      >
+                        <Hash className="w-3 h-3 text-cyan-400 group-hover/id:text-slate-950" />
+                        <span className="text-[10px] font-black text-cyan-400 group-hover/id:text-slate-950 tracking-[0.2em]">
+                          {user.playerId || "------"}
+                        </span>
+                        <Copy className="w-2.5 h-2.5 text-cyan-600 group-hover/id:text-slate-950 opacity-0 group-hover/id:opacity-100 transition-all" />
+                      </button>
                     </div>
                   </div>
-                  <p className="text-slate-500 font-bold uppercase tracking-[0.2em] text-xs flex items-center justify-center md:justify-start gap-2">
+                  <p className="text-slate-500 font-bold uppercase tracking-[0.2em] text-[10px] flex items-center justify-center md:justify-start gap-2">
                     <Shield className="w-3.5 h-3.5" /> {user.role} <span className="mx-2">•</span> <Mail className="w-3.5 h-3.5" /> {user.email}
                   </p>
                 </div>

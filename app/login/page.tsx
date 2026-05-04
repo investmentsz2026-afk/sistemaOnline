@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 import { PageTurn } from "@/components/ui/motion/page-turn";
 import { Auth3DFrame } from "@/components/ui/motion/auth-3d-frame";
@@ -36,12 +37,15 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
+import { checkUserStatus } from "./actions";
+
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
   const [overlayStatus, setOverlayStatus] = useState<"loading" | "success" | "error">("loading");
   const [overlayMessage, setOverlayMessage] = useState("");
-  const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [errorDialogMessage, setErrorDialogMessage] = useState("");
+  const [errorDialogTitle, setErrorDialogTitle] = useState("");
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -67,9 +71,17 @@ export default function LoginPage() {
         setOverlayStatus("error");
         setOverlayMessage("Error de Acceso");
         
+        // Verificamos si es por bloqueo
+        const statusCheck = await checkUserStatus(email);
+        const title = statusCheck.isBlocked ? "Cuenta Suspendida" : "Error de Acceso";
+        const message = statusCheck.isBlocked 
+          ? "Tu cuenta ha sido suspendida por el departamento de seguridad debido a fraude o comportamiento inapropiado en nuestra plataforma de juegos."
+          : "Usuario o contraseña incorrectos.";
+
         setTimeout(() => {
           setShowOverlay(false);
-          setShowErrorDialog(true);
+          setErrorDialogTitle(title);
+          setErrorDialogMessage(message);
         }, 1500);
       } else {
         const response = await fetch("/api/auth/session");
@@ -84,7 +96,8 @@ export default function LoginPage() {
           
           setTimeout(() => {
             setShowOverlay(false);
-            setShowErrorDialog(true);
+            setErrorDialogTitle("Acceso Restringido");
+            setErrorDialogMessage("Por favor use el portal administrativo.");
           }, 1500);
           return;
         }
@@ -97,7 +110,7 @@ export default function LoginPage() {
           router.refresh();
         }, 1500);
       }
-    } catch (error) {
+    } catch (error: any) {
       setShowOverlay(false);
       toast.error("Ocurrió un error inesperado");
     } finally {
@@ -202,19 +215,19 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <Dialog open={showErrorDialog} onOpenChange={setShowErrorDialog}>
+        <Dialog open={errorDialogTitle !== "" && !!errorDialogMessage && (errorDialogTitle === "Cuenta Suspendida" || errorDialogTitle === "Acceso Restringido" || (errorDialogTitle === "Error de Acceso" && errorDialogMessage !== ""))} onOpenChange={(open) => { if(!open) { setErrorDialogTitle(""); setErrorDialogMessage(""); } }}>
           <DialogContent className="bg-[#0b0e14] border-white/5 rounded-[2rem] max-w-sm">
             <DialogHeader className="items-center text-center">
-              <AlertCircle className="w-8 h-8 text-red-500 mb-4" />
-              <DialogTitle className="text-xl font-black text-white uppercase">Error de Acceso</DialogTitle>
-              <DialogDescription className="text-slate-400">Usuario o contraseña incorrectos.</DialogDescription>
+              <AlertCircle className={cn("w-12 h-12 mb-4", errorDialogTitle === "Cuenta Suspendida" ? "text-red-500" : "text-amber-500")} />
+              <DialogTitle className="text-xl font-black text-white uppercase italic">{errorDialogTitle}</DialogTitle>
+              <DialogDescription className="text-slate-400 font-medium leading-relaxed mt-2">{errorDialogMessage}</DialogDescription>
             </DialogHeader>
-            <DialogFooter>
+            <DialogFooter className="mt-4">
               <Button 
-                onClick={() => setShowErrorDialog(false)} 
-                className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black h-12 rounded-xl"
+                onClick={() => { setErrorDialogTitle(""); setErrorDialogMessage(""); }} 
+                className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black h-12 rounded-xl uppercase tracking-widest text-[10px]"
               >
-                ACEPTAR
+                ENTENDIDO
               </Button>
             </DialogFooter>
           </DialogContent>

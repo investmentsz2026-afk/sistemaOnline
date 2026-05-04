@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Coins, Play, Trophy, Users, CheckCircle2, AlertCircle, Sparkles, Plus, Swords, LogIn, XCircle, Landmark } from "lucide-react";
+import { User, Coins, Play, Trophy, Users, CheckCircle2, AlertCircle, Sparkles, Plus, Swords, LogIn, XCircle, Landmark, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import confetti from "canvas-confetti";
 import { toast } from "sonner";
+import { sendFriendRequest } from "@/app/mensajes/actions";
 
 interface RouletteArenaProps {
   initialBalance: number;
@@ -91,7 +92,7 @@ export const RouletteArena = ({ initialBalance }: RouletteArenaProps) => {
     const namesPool = [...RANDOM_NAMES].sort(() => Math.random() - 0.5);
     const existingPlayers = Array.from({ length: room.joinedCount }).map((_, i) => ({
       name: namesPool[i],
-      id: Math.floor(Math.random() * 90 + 10).toString(), 
+      id: Math.floor(100000 + Math.random() * 900000).toString(), 
       isUser: false
     }));
     setJoinedPlayers([...existingPlayers, { name: "TÚ", id: "YOU", isUser: true }]);
@@ -103,7 +104,7 @@ export const RouletteArena = ({ initialBalance }: RouletteArenaProps) => {
         const usedNames = joinedPlayers.map(p => p.name);
         const availableNames = RANDOM_NAMES.filter(n => !usedNames.includes(n));
         const baseName = availableNames.length > 0 ? availableNames[0] : "Player_" + Math.floor(Math.random() * 100);
-        const uniqueId = Math.floor(Math.random() * 90 + 10).toString();
+        const uniqueId = Math.floor(100000 + Math.random() * 900000).toString();
         setJoinedPlayers(prev => [...prev, { name: baseName, id: uniqueId, isUser: false }]);
       }, 2000);
       return () => clearTimeout(timeout);
@@ -165,6 +166,16 @@ export const RouletteArena = ({ initialBalance }: RouletteArenaProps) => {
         }
       }, 7000);
     }, 2000);
+  };
+
+  const handleAddFriend = async (playerId: string) => {
+    if (playerId === "YOU" || playerId.length !== 6) return;
+    const res = await sendFriendRequest(playerId);
+    if (res.success) {
+      toast.success("¡Solicitud de amistad enviada!");
+    } else {
+      toast.error(res.error);
+    }
   };
 
   return (
@@ -345,8 +356,25 @@ export const RouletteArena = ({ initialBalance }: RouletteArenaProps) => {
                 <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
                   {joinedPlayers.map((player, i) => (
                     <div key={i} className={cn("flex items-center justify-between p-4 rounded-2xl border transition-all", player.isUser ? "bg-cyan-500/10 border-cyan-500/30" : "bg-white/5 border-white/5")}>
-                      <div className="flex items-center gap-4"><div className={cn("w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black", player.isUser ? "bg-cyan-500 text-white" : "bg-slate-800 text-slate-500")}>{player.name[0]}</div><span className="text-xs font-black text-white uppercase">{player.name} <span className="text-slate-600 ml-1">#{player.id}</span></span></div>
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      <div className="flex items-center gap-4">
+                        <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black", player.isUser ? "bg-cyan-500 text-white" : "bg-slate-800 text-slate-500")}>{player.name[0]}</div>
+                        <div className="flex flex-col">
+                          <span className="text-xs font-black text-white uppercase leading-none mb-1">{player.name}</span>
+                          <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">ID: {player.id}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {!player.isUser && (
+                          <button 
+                            onClick={() => handleAddFriend(player.id)}
+                            className="p-2 bg-white/5 hover:bg-cyan-500 hover:text-slate-950 rounded-lg transition-all"
+                            title="Agregar Amigo"
+                          >
+                            <UserPlus className="w-4 h-4" />
+                          </button>
+                        )}
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      </div>
                     </div>
                   ))}
                 </div>

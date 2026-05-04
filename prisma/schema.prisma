@@ -24,6 +24,7 @@ enum WithdrawalStatus {
 
 model User {
   id            String    @id @default(cuid())
+  playerId      String?   @unique // ID de 6 dígitos único (ej: 102938)
   name          String?
   email         String    @unique
   password      String
@@ -33,6 +34,9 @@ model User {
   image         String?
   isActive      Boolean   @default(true)
   balance       Float     @default(0.0)
+  points        Int       @default(0)    // Puntos acumulados en batallas/misiones
+  wins          Int       @default(0)    // Número de victorias totales
+  lastSeen      DateTime  @default(now()) // Para "En Línea" / "Última vez"
   deletedAt     DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -40,8 +44,122 @@ model User {
   auditLogs     AuditLog[]
   withdrawals   Withdrawal[]
   completedMissions UserMission[]
+  
+  // Amistad
+  friendsRequested   Friendship[] @relation("UserRequested")
+  friendsReceived    Friendship[] @relation("UserReceived")
+  
+  // Chat
+  sentMessages      Message[]
+  conversations     ConversationParticipant[]
+  notifications     Notification[]
+  
+  // Regalos
+  sentGifts         GiftTransaction[] @relation("GiftSender")
+  receivedGifts     GiftTransaction[] @relation("GiftReceiver")
+  
+  // Finanzas
+  recharges         Recharge[]
 
   @@map("users")
+}
+
+model Recharge {
+  id              String   @id @default(cuid())
+  userId          String
+  amount          Float    // Monto recargado
+  coins           Float    // Monedas otorgadas
+  method          String   // "PAYPAL", "CARD", etc.
+  status          String   @default("PENDING") // PENDING, COMPLETED, FAILED
+  transactionId   String?  @unique // ID del proveedor de pago
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id])
+
+  @@map("recharges")
+}
+
+model Gift {
+  id          String   @id @default(cuid())
+  name        String
+  price       Float    @default(0.0)
+  icon        String   // Emoji o URL de imagen
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  transactions GiftTransaction[]
+
+  @@map("gift_types")
+}
+
+model GiftTransaction {
+  id              String   @id @default(cuid())
+  giftId          String
+  senderId        String
+  receiverId      String
+  amount          Float    // Precio total pagado por el emisor
+  recipientGets   Float    // Lo que recibe el destinatario (después de comisión)
+  platformFee     Float    // Comisión de la casa
+  createdAt       DateTime @default(now())
+
+  gift            Gift     @relation(fields: [giftId], references: [id])
+  sender          User     @relation("GiftSender", fields: [senderId], references: [id])
+  receiver        User     @relation("GiftReceiver", fields: [receiverId], references: [id])
+
+  @@map("gift_transactions")
+}
+
+model Friendship {
+  id          String   @id @default(cuid())
+  senderId    String
+  receiverId  String
+  status      String   @default("PENDING") // PENDING, ACCEPTED, REJECTED
+  createdAt   DateTime @default(now())
+
+  sender      User     @relation("UserRequested", fields: [senderId], references: [id])
+  receiver    User     @relation("UserReceived", fields: [receiverId], references: [id])
+
+  @@unique([senderId, receiverId])
+  @@map("friendships")
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages     Message[]
+  participants ConversationParticipant[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String   @id @default(cuid())
+  conversationId String
+  userId         String
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id])
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  text           String?
+  imageUrl       String?  // Soporte para fotos
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation(fields: [senderId], references: [id])
+
+  @@map("messages")
 }
 
 model Withdrawal {
@@ -82,4 +200,18 @@ model AuditLog {
   user        User?    @relation(fields: [userId], references: [id])
 
   @@map("audit_logs")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // FRIEND_REQUEST, REQUEST_ACCEPTED, NEW_MESSAGE
+  title     String
+  message   String
+  link      String?  // URL para redirigir al hacer click
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
 }

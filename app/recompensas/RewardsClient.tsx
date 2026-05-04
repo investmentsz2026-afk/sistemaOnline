@@ -21,9 +21,11 @@ import {
   Coins,
   Share2 as Instagram,
   Share2 as Facebook,
-  ExternalLink
+  ExternalLink,
+  UserPlus
 } from "lucide-react";
 import { completeSocialMission } from "./actions";
+import { sendFriendRequest } from "@/app/mensajes/actions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -34,6 +36,7 @@ interface LeaderboardUser {
   name: string | null;
   image: string | null;
   balance: number;
+  playerId?: string;
 }
 
 interface RewardsClientProps {
@@ -68,6 +71,19 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
       }
     }
     setLoadingMission(null);
+  };
+
+  const handleAddFriend = async (playerId: string) => {
+    if (!playerId) {
+      toast.error("Este jugador no tiene un ID de batalla válido.");
+      return;
+    }
+    const res = await sendFriendRequest(playerId);
+    if (res.success) {
+      toast.success("¡Solicitud de amistad enviada!");
+    } else {
+      toast.error(res.error);
+    }
   };
 
   // Resetear pestaña cuando cambia la URL (al presionar el menú inferior)
@@ -282,6 +298,14 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
                       <div className="text-slate-300 font-black text-[10px] md:text-sm uppercase mb-2">Premio: +$50.00</div>
                       <span className="text-white font-black uppercase text-[9px] md:text-sm truncate w-full text-center leading-none mb-1">{users[1].name}</span>
                       <span className="text-slate-400 font-bold text-[8px] md:text-xs">{(users[1].balance/1000).toFixed(2)} pts</span>
+                      {users[1].id !== currentUserId && (
+                        <button 
+                          onClick={() => handleAddFriend(users[1].playerId!)}
+                          className="mt-2 p-1.5 bg-white/5 hover:bg-cyan-500 hover:text-slate-950 rounded-lg transition-all"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -300,6 +324,14 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
                       <div className="text-yellow-400 font-black text-xs md:text-xl uppercase mb-4 animate-pulse drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]">Premio: +$100.00</div>
                       <span className="text-white font-black uppercase text-xs md:text-2xl truncate w-full text-center leading-none mb-2 drop-shadow-xl">{users[0].name}</span>
                       <span className="text-yellow-100 font-bold text-[10px] md:text-base">{(users[0].balance/1000).toFixed(2)} pts</span>
+                      {users[0].id !== currentUserId && (
+                        <button 
+                          onClick={() => handleAddFriend(users[0].playerId!)}
+                          className="mt-3 p-2 bg-yellow-500 text-yellow-950 hover:bg-white rounded-xl transition-all shadow-lg"
+                        >
+                          <UserPlus className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -315,6 +347,14 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
                       <div className="text-amber-500 font-black text-[8px] md:text-xs uppercase mb-1">Premio: +$25.00</div>
                       <span className="text-white font-black uppercase text-[9px] md:text-xs truncate w-full text-center leading-none mb-1">{users[2].name}</span>
                       <span className="text-amber-800 font-bold text-[7px] md:text-[10px]">{(users[2].balance/1000).toFixed(2)} pts</span>
+                      {users[2].id !== currentUserId && (
+                        <button 
+                          onClick={() => handleAddFriend(users[2].playerId!)}
+                          className="mt-2 p-1.5 bg-white/5 hover:bg-amber-600 hover:text-white rounded-lg transition-all"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}
@@ -329,9 +369,20 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
                       <PlayerAvatar user={user} size="sm" />
                       <span className="text-xs font-black text-white uppercase tracking-tight">{user.name}</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-black text-white italic tracking-tighter">${(user.balance/1000).toFixed(2)}</span>
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col items-end">
+                        <span className="text-xs font-black text-white italic tracking-tighter">${(user.balance/1000).toFixed(2)}</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] mt-1" />
+                      </div>
+                      {user.id !== currentUserId && (
+                        <button 
+                          onClick={() => handleAddFriend(user.playerId!)}
+                          className="p-2 bg-white/5 hover:bg-cyan-500 hover:text-slate-950 rounded-xl transition-all"
+                          title="Agregar Amigo"
+                        >
+                          <UserPlus className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}

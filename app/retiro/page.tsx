@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { Navbar } from "@/components/landing/Navbar";
 import { Wallet, Flame, Bell, ChevronRight } from "lucide-react";
 import { RetiroOptions } from "./RetiroOptions";
+import { BilleteraTabs } from "./BilleteraTabs";
 
 export default async function RetiroPage() {
   const session = await auth();
@@ -52,6 +53,11 @@ export default async function RetiroPage() {
         <section className="bg-[#171c2e] rounded-3xl p-6 border border-white/5 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
           
+          <div className="space-y-1 mb-4">
+            <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em]">Mi Saldo Táctico</p>
+            <h1 className="text-2xl font-black text-white uppercase italic tracking-tighter">Billetera de Combate</h1>
+          </div>
+
           <div className="flex items-center gap-4 mb-8">
             <div className="w-12 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.4)]">
               <Wallet className="w-6 h-6 text-emerald-950" />
@@ -61,16 +67,13 @@ export default async function RetiroPage() {
 
           <div className="space-y-3">
             <p className="text-slate-400 text-sm font-medium">
-              Mínimo para el primer retiro: <span className="text-white">$ 5</span>
+              Estado de cuenta: <span className="text-[#00e676] font-bold">Verificado</span>
             </p>
-            <button className="flex items-center gap-1 text-sm font-bold text-white hover:text-emerald-400 transition-colors">
-              Eliminar mínimo de $ 5 <ChevronRight className="w-4 h-4" />
-            </button>
           </div>
         </section>
 
-        {/* Withdrawal Options (Client Component) */}
-        <RetiroOptions balance={balance} />
+        {/* Financial Operations Tabs (Recharge / Withdraw) */}
+        <BilleteraTabs balance={balance} />
       </div>
 
     </main>
