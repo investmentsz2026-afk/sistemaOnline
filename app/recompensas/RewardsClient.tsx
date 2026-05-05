@@ -28,7 +28,6 @@ import { completeSocialMission } from "./actions";
 import { sendFriendRequest } from "@/app/mensajes/actions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
 import { useSearchParams } from "next/navigation";
 
 interface LeaderboardUser {
@@ -50,27 +49,53 @@ interface RewardsClientProps {
 
 export const RewardsClient = ({ users, currentUserId, userRole, completedMissions }: RewardsClientProps) => {
   const [activeTab, setActiveTab] = useState<"misiones" | "bonos" | "referidos" | null>(null);
-  const [timeLeft, setTimeLeft] = useState({ days: 14, hours: 23, mins: 59, secs: 59 });
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, mins: 0, secs: 0 });
   const [copied, setCopied] = useState(false);
   const searchParams = useSearchParams();
   const [loadingMission, setLoadingMission] = useState<string | null>(null);
 
   const isAdminOrMod = userRole === "ADMIN" || userRole === "MODERATOR";
 
-  const handleCompleteMission = async (missionId: string, url: string) => {
-    // Abrir el link en una nueva pestaña
-    window.open(url, "_blank");
+  // Función para calcular el tiempo restante global (Ciclos de 15 días)
+  const calculateGlobalTimeLeft = () => {
+    // Fecha de referencia: El inicio de este ciclo (Domingo 3 de Mayo de 2026 a las 23:59:59 PET)
+    const referenceDate = new Date("2026-05-03T23:59:59-05:00").getTime();
+    const now = new Date().getTime();
+    
+    const cycleMs = 15 * 24 * 60 * 60 * 1000; 
+    let msSinceReference = now - referenceDate;
+    
+    // Si por alguna razón la fecha actual es anterior a la referencia, 
+    // nos aseguramos de que no de números negativos extraños
+    if (msSinceReference < 0) msSinceReference = 0;
 
-    // Procesar la recompensa
+    const msIntoCurrentCycle = msSinceReference % cycleMs;
+    const msRemaining = cycleMs - msIntoCurrentCycle;
+    
+    const days = Math.floor(msRemaining / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((msRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const mins = Math.floor((msRemaining % (1000 * 60 * 60)) / (1000 * 60));
+    const secs = Math.floor((msRemaining % (1000 * 60)) / 1000);
+    
+    return { days, hours, mins, secs };
+  };
+
+  useEffect(() => {
+    setTimeLeft(calculateGlobalTimeLeft());
+    const timer = setInterval(() => {
+      setTimeLeft(calculateGlobalTimeLeft());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleCompleteMission = async (missionId: string, url: string) => {
+    window.open(url, "_blank");
     setLoadingMission(missionId);
     const result = await completeSocialMission(missionId);
-    
     if (result.success) {
       toast.success("¡Misión completada! Has ganado $0.02");
-    } else {
-      if (result.error !== "Ya has reclamado esta recompensa.") {
-        toast.error(result.error);
-      }
+    } else if (result.error !== "Ya has reclamado esta recompensa.") {
+      toast.error(result.error);
     }
     setLoadingMission(null);
   };
@@ -81,26 +106,14 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
       return;
     }
     const res = await sendFriendRequest(playerId);
-    if (res.success) {
-      toast.success("¡Solicitud de amistad enviada!");
-    } else {
-      toast.error(res.error);
-    }
+    if (res.success) toast.success("¡Solicitud de amistad enviada!");
+    else toast.error(res.error);
   };
 
-  // Resetear pestaña cuando cambia la URL (al presionar el menú inferior)
   useEffect(() => {
     setActiveTab(null);
   }, [searchParams]);
 
-  // Reseteo de pestaña al entrar (Simulación de navegación limpia)
-  useEffect(() => {
-    const handleReset = () => setActiveTab(null);
-    window.addEventListener('popstate', handleReset);
-    return () => window.removeEventListener('popstate', handleReset);
-  }, []);
-
-  // URL real de referido
   const referralLink = typeof window !== "undefined" 
     ? `${window.location.origin}/register?ref=${currentUserId}` 
     : "";
@@ -146,17 +159,6 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
     },
   ];
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev.secs > 0) return { ...prev, secs: prev.secs - 1 };
-        if (prev.mins > 0) return { ...prev, mins: prev.mins - 1, secs: 59 };
-        return prev;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
   const copyToClipboard = () => {
     navigator.clipboard.writeText(referralLink);
     setCopied(true);
@@ -164,24 +166,18 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const podium = [users[1], users[0], users[2]].filter(Boolean); // 2, 1, 3
+  const podium = [users[1], users[0], users[2]].filter(Boolean);
   const restOfUsers = users.slice(3);
 
-  // Simulación de referidos reales para que no de error
   const mockReferrals = [
     { name: "Juan***", date: "01/05/2026", status: "PENDIENTE", detail: "Esperando primer retiro" },
     { name: "Maria***", date: "28/04/2026", status: "COMPLETADO", detail: "¡$1.00 ganado!" },
     { name: "Pedro***", date: "25/04/2026", status: "PENDIENTE", detail: "Usuario registrado" },
   ];
 
-  // Componente de Avatar mejorado para que NUNCA se vea roto
   const PlayerAvatar = ({ user, size = "md", color = "cyan" }: { user: LeaderboardUser, size?: "sm" | "md" | "lg", color?: string }) => {
     const initials = user.name?.substring(0, 2).toUpperCase() || "??";
-    const sizeClasses = {
-      sm: "w-8 h-8 text-[10px]",
-      md: "w-14 h-14 text-sm",
-      lg: "w-24 h-24 text-2xl"
-    };
+    const sizeClasses = { sm: "w-8 h-8 text-[10px]", md: "w-14 h-14 text-sm", lg: "w-24 h-24 text-2xl" };
 
     return (
       <div className={cn(
@@ -202,8 +198,6 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
 
   return (
     <div className="space-y-4 md:space-y-6 pb-32">
-      
-      {/* MENÚ SUPERIOR DE 3 OPCIONES - SOLO PARA JUGADORES */}
       {!isAdminOrMod && (
         <div className="sticky top-0 z-40 bg-[#050a1f]/80 backdrop-blur-xl border-b border-white/5">
           <div className="flex items-center justify-around max-w-2xl mx-auto h-16 md:h-20">
@@ -232,16 +226,11 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
 
       <div className="px-4 max-w-4xl mx-auto">
         <AnimatePresence mode="wait">
-          
           {!activeTab ? (
             <motion.div key="ranking-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-12 mt-4">
-              
-              {/* HEADER PIRÁMIDE CON CONTADOR Y TABLA DE PREMIOS */}
               <div className="flex flex-col gap-6">
                 <div className="relative overflow-hidden bg-[#0b0e14] border border-white/10 rounded-[3rem] p-8 md:p-10 shadow-2xl">
-                  <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
-                    <Trophy className="w-48 h-48 text-white" />
-                  </div>
+                  <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none"><Trophy className="w-48 h-48 text-white" /></div>
                   <div className="relative z-10 flex flex-col lg:flex-row justify-between items-center gap-10">
                     <div className="space-y-4 text-center lg:text-left">
                       <div className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-full">
@@ -252,12 +241,9 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
                         Pirámide de <br /> <span className="text-yellow-400">Premios</span>
                       </h1>
                     </div>
-
                     <div className="flex flex-col items-center gap-6">
                       <div className="bg-black/60 backdrop-blur-2xl border border-white/10 rounded-[2rem] p-6 flex flex-col items-center min-w-[280px]">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                          <Timer className="w-3 h-3 text-cyan-500" /> El Tiempo se agota en:
-                        </p>
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"><Timer className="w-3 h-3 text-cyan-500" /> El Tiempo se agota en:</p>
                         <div className="flex gap-4">
                           {[{ v: timeLeft.days, u: "D" }, { v: timeLeft.hours, u: "H" }, { v: timeLeft.mins, u: "M" }, { v: timeLeft.secs, u: "S" }].map((t, i) => (
                             <div key={i} className="flex flex-col items-center">
@@ -270,8 +256,6 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
                     </div>
                   </div>
                 </div>
-
-                {/* TARJETA DE DESGLOSE DE PREMIOS (NUEVA) */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
                     { label: "1º Puesto", prize: "100.00", color: "text-yellow-400", bg: "bg-yellow-500/5" },
@@ -287,83 +271,50 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
                 </div>
               </div>
 
-              {/* PODIO DINÁMICO ORDENADO (2, 1, 3) */}
               <div className="flex items-end justify-center w-full gap-3 md:gap-8 pt-10 px-2 max-w-3xl mx-auto">
-                {/* 2º PUESTO */}
                 {users[1] && (
                   <div className="flex-1 flex flex-col items-center group">
                     <div className="relative mb-4 group-hover:scale-105 transition-transform duration-500">
                       <PlayerAvatar user={users[1]} size="md" color="silver" />
                       <div className="absolute -top-2 -right-2 bg-slate-400 text-slate-950 w-7 h-7 rounded-full flex items-center justify-center font-black text-xs shadow-lg">2</div>
                     </div>
-                    <div className="w-full h-32 md:h-48 bg-gradient-to-t from-slate-500/40 via-slate-500/10 to-transparent rounded-t-[2.5rem] border-x border-t border-slate-500/30 flex flex-col items-center justify-center p-4 shadow-[0_-20px_40px_rgba(148,163,184,0.1)]">
-                      <div className="text-slate-300 font-black text-[10px] md:text-sm uppercase mb-2">Premio: +$50.00</div>
-                      <span className="text-white font-black uppercase text-[9px] md:text-sm truncate w-full text-center leading-none mb-1">{users[1].name}</span>
+                    <div className="w-full h-32 md:h-48 bg-gradient-to-t from-slate-500/40 via-slate-500/10 to-transparent rounded-t-[2.5rem] border-x border-t border-slate-500/30 flex flex-col items-center justify-center p-4">
+                      <div className="text-slate-300 font-black text-[10px] md:text-sm uppercase mb-2">+$50.00</div>
+                      <span className="text-white font-black uppercase text-[9px] md:text-sm truncate w-full text-center mb-1">{users[1].name}</span>
                       <span className="text-slate-400 font-bold text-[8px] md:text-xs">{users[1].points} pts</span>
-                      {users[1].id !== currentUserId && (
-                        <button 
-                          onClick={() => handleAddFriend(users[1].playerId!)}
-                          className="mt-2 p-1.5 bg-white/5 hover:bg-cyan-500 hover:text-slate-950 rounded-lg transition-all"
-                        >
-                          <UserPlus className="w-3.5 h-3.5" />
-                        </button>
-                      )}
                     </div>
                   </div>
                 )}
-
-                {/* 1º PUESTO */}
                 {users[0] && (
                   <div className="flex-[1.2] flex flex-col items-center z-10 group">
                     <div className="relative mb-6 group-hover:scale-110 transition-transform duration-500">
-                      <motion.div animate={{ y: [-5, 5, -5] }} transition={{ duration: 3, repeat: Infinity }}>
-                        <Crown className="absolute -top-12 left-1/2 -translate-x-1/2 w-10 h-10 text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.6)]" />
-                      </motion.div>
+                      <Crown className="absolute -top-12 left-1/2 -translate-x-1/2 w-10 h-10 text-yellow-400" />
                       <PlayerAvatar user={users[0]} size="lg" color="gold" />
                       <div className="absolute -top-1 -right-1 bg-yellow-500 text-yellow-950 w-9 h-9 rounded-full flex items-center justify-center font-black text-sm shadow-xl border-4 border-[#050a1f]">1</div>
                     </div>
                     <div className="w-full h-48 md:h-72 bg-gradient-to-t from-yellow-500/50 via-yellow-500/20 to-transparent rounded-t-[3rem] border-x border-t border-yellow-500/40 flex flex-col items-center justify-center p-6 shadow-[0_-30px_60px_rgba(234,179,8,0.2)]">
-                      <div className="text-yellow-400 font-black text-xs md:text-xl uppercase mb-4 animate-pulse drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]">Premio: +$100.00</div>
-                      <span className="text-white font-black uppercase text-[10px] md:text-2xl truncate w-full text-center leading-none mb-2 drop-shadow-xl">{users[0].name}</span>
+                      <div className="text-yellow-400 font-black text-xs md:text-xl uppercase mb-4 animate-pulse">+$100.00</div>
+                      <span className="text-white font-black uppercase text-[10px] md:text-2xl truncate w-full text-center mb-2">{users[0].name}</span>
                       <span className="text-yellow-100 font-bold text-[10px] md:text-base">{users[0].points} pts</span>
-                      {users[0].id !== currentUserId && (
-                        <button 
-                          onClick={() => handleAddFriend(users[0].playerId!)}
-                          className="mt-3 p-2 bg-yellow-500 text-yellow-950 hover:bg-white rounded-xl transition-all shadow-lg"
-                        >
-                          <UserPlus className="w-4 h-4" />
-                        </button>
-                      )}
                     </div>
                   </div>
                 )}
-
-                {/* 3º PUESTO */}
                 {users[2] && (
                   <div className="flex-1 flex flex-col items-center group">
                     <div className="relative mb-4 group-hover:scale-105 transition-transform duration-500">
                       <PlayerAvatar user={users[2]} size="md" color="bronze" />
                       <div className="absolute -top-2 -right-2 bg-amber-700 text-white w-7 h-7 rounded-full flex items-center justify-center font-black text-xs shadow-lg">3</div>
                     </div>
-                    <div className="w-full h-24 md:h-36 bg-gradient-to-t from-amber-700/40 via-amber-700/10 to-transparent rounded-t-[2.5rem] border-x border-t border-amber-800/30 flex flex-col items-center justify-center p-4 shadow-[0_-20px_40px_rgba(180,83,9,0.1)]">
-                      <div className="text-amber-500 font-black text-[8px] md:text-xs uppercase mb-1">Premio: +$25.00</div>
-                      <span className="text-white font-black uppercase text-[9px] md:text-xs truncate w-full text-center leading-none mb-1">{users[2].name}</span>
+                    <div className="w-full h-24 md:h-36 bg-gradient-to-t from-amber-700/40 via-amber-700/10 to-transparent rounded-t-[2.5rem] border-x border-t border-amber-800/30 flex flex-col items-center justify-center p-4">
+                      <div className="text-amber-500 font-black text-[8px] md:text-xs uppercase mb-1">+$25.00</div>
+                      <span className="text-white font-black uppercase text-[9px] md:text-xs truncate w-full text-center mb-1">{users[2].name}</span>
                       <span className="text-amber-800 font-bold text-[7px] md:text-[10px]">{users[2].points} pts</span>
-                      {users[2].id !== currentUserId && (
-                        <button 
-                          onClick={() => handleAddFriend(users[2].playerId!)}
-                          className="mt-2 p-1.5 bg-white/5 hover:bg-amber-600 hover:text-white rounded-lg transition-all"
-                        >
-                          <UserPlus className="w-3.5 h-3.5" />
-                        </button>
-                      )}
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* LISTA DE PUESTOS RESTANTES */}
-              <div className="bg-[#0b0e14]/80 border border-white/10 rounded-[2.5rem] overflow-hidden backdrop-blur-3xl shadow-2xl">
+              <div className="bg-[#0b0e14]/80 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl">
                 {restOfUsers.map((user, idx) => (
                   <div key={user.id} className="px-8 py-5 flex items-center justify-between border-b border-white/5 last:border-0 hover:bg-white/[0.03] transition-all">
                     <div className="flex items-center gap-6">
@@ -377,13 +328,7 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] mt-1" />
                       </div>
                       {user.id !== currentUserId && (
-                        <button 
-                          onClick={() => handleAddFriend(user.playerId!)}
-                          className="p-2 bg-white/5 hover:bg-cyan-500 hover:text-slate-950 rounded-xl transition-all"
-                          title="Agregar Amigo"
-                        >
-                          <UserPlus className="w-4 h-4" />
-                        </button>
+                        <button onClick={() => handleAddFriend(user.playerId!)} className="p-2 bg-white/5 hover:bg-cyan-500 hover:text-slate-950 rounded-xl transition-all"><UserPlus className="w-4 h-4" /></button>
                       )}
                     </div>
                   </div>
@@ -391,13 +336,9 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
               </div>
             </motion.div>
           ) : (
-            
             <motion.div key="active-tab-view" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="mt-6 space-y-6">
-              
-              {/* CONTENIDO: INVITA A AMIGOS (FUNCIONAL) */}
               {activeTab === "referidos" && (
                 <div className="space-y-6">
-                  {/* Banner Principal */}
                   <div className="bg-gradient-to-br from-indigo-600 to-purple-800 rounded-3xl p-8 relative overflow-hidden shadow-2xl border border-white/10">
                     <div className="relative z-10 space-y-4">
                       <h2 className="text-3xl md:text-4xl font-black text-white leading-tight uppercase italic">¡Gana <span className="text-emerald-400">$1.00 USD</span> <br /> por amigo invitado!</h2>
@@ -405,22 +346,16 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
                     </div>
                     <Gift className="absolute -right-4 -bottom-4 w-40 h-40 text-white/10 rotate-12" />
                   </div>
-
-                  {/* Sección de Link */}
                   <div className="space-y-3">
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Tu Enlace de Referido Personal</p>
                     <div className="bg-[#1a1c26] border border-white/10 rounded-2xl p-2 flex items-center justify-between gap-4 shadow-inner">
-                      <div className="flex-1 px-4 overflow-hidden">
-                        <code className="text-emerald-400 font-bold text-xs truncate block">{referralLink}</code>
-                      </div>
+                      <div className="flex-1 px-4 overflow-hidden"><code className="text-emerald-400 font-bold text-xs truncate block">{referralLink}</code></div>
                       <button onClick={copyToClipboard} className="bg-emerald-500 text-slate-900 px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-400 transition-all flex items-center gap-2">
                         {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                         {copied ? "¡Copiado!" : "Copiar"}
                       </button>
                     </div>
                   </div>
-
-                  {/* Estadísticas Rápidas */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-[#0b0e14] border border-white/5 rounded-2xl p-6">
                       <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Ganado</p>
@@ -431,12 +366,8 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
                       <p className="text-3xl font-black text-yellow-500 italic tracking-tighter">$2.00</p>
                     </div>
                   </div>
-
-                  {/* HISTORIAL DE REFERIDOS (FUNCIONAL) */}
                   <div className="space-y-4">
-                    <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] ml-2 flex items-center gap-2">
-                      <Clock className="w-3.5 h-3.5 text-slate-500" /> Historial de Invitados
-                    </h3>
+                    <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] ml-2 flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-slate-500" /> Historial de Invitados</h3>
                     <div className="space-y-2">
                       {mockReferrals.map((ref, i) => (
                         <div key={i} className="bg-white/5 border border-white/5 rounded-2xl p-4 flex items-center justify-between group hover:bg-white/[0.08] transition-all">
@@ -448,10 +379,7 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className={cn("text-[9px] font-black px-3 py-1 rounded-full border mb-1 inline-block", 
-                              ref.status === "COMPLETADO" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20")}>
-                              {ref.status}
-                            </div>
+                            <div className={cn("text-[9px] font-black px-3 py-1 rounded-full border mb-1 inline-block", ref.status === "COMPLETADO" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20")}>{ref.status}</div>
                             <p className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">{ref.detail}</p>
                           </div>
                         </div>
@@ -460,169 +388,58 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
                   </div>
                 </div>
               )}
-              
-              {/* CONTENIDO: BONOS (RECOMPENSAS ESPECIALES) */}
               {activeTab === "bonos" && (
                 <div className="space-y-6">
                   <div className="bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-700 rounded-3xl p-8 relative overflow-hidden shadow-2xl border border-white/10 group">
-                    <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform duration-700">
-                      <Gift className="w-40 h-40 text-white" />
-                    </div>
+                    <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform duration-700"><Gift className="w-40 h-40 text-white" /></div>
                     <div className="relative z-10 space-y-6">
-                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 border border-white/20 rounded-full">
-                        <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                        <span className="text-[9px] font-black text-white uppercase tracking-widest">Premios Especiales</span>
-                      </div>
+                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 border border-white/20 rounded-full"><Star className="w-3 h-3 text-yellow-400 fill-yellow-400" /> <span className="text-[9px] font-black text-white uppercase tracking-widest">Premios Especiales</span></div>
                       <h2 className="text-3xl md:text-5xl font-black text-white italic tracking-tighter uppercase leading-none">Tu Centro de <br /> <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-amber-500">Bonificaciones</span></h2>
-                      <p className="text-indigo-100/70 text-sm font-medium max-w-md">Multiplica tus ganancias y recibe premios exclusivos por tu lealtad a la plataforma.</p>
                     </div>
                   </div>
-
-                  {/* Lista de Bonos Disponibles */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[
                       { title: "Bono de Racha Semanal", desc: "Extra por jugar 7 días seguidos", amount: "+$5.00 USD", status: "DISPONIBLE", color: "yellow" },
                       { title: "Bono de Registro", desc: "Regalo por crear tu cuenta", amount: "+500 coins", status: "RECLAMADO", color: "emerald" },
-                      { title: "Bono de Nivel 5", desc: "Premio por tu primer rango alto", amount: "+1000 coins", status: "BLOQUEADO", color: "slate" },
-                      { title: "Bono Especial de Fin de Mes", desc: "Solo para jugadores activos", amount: "+$3.00 USD", status: "BLOQUEADO", color: "slate" },
                     ].map((bono, i) => (
-                      <div key={i} className="bg-[#0b0e14] border border-white/5 rounded-2xl p-6 flex flex-col justify-between gap-6 hover:bg-white/[0.03] transition-all">
+                      <div key={i} className="bg-[#0b0e14] border border-white/5 rounded-2xl p-6 flex flex-col justify-between gap-6">
                         <div className="flex justify-between items-start">
-                          <div className="space-y-1">
-                            <h4 className="text-sm font-black text-white uppercase italic">{bono.title}</h4>
-                            <p className="text-[10px] text-slate-500 font-bold">{bono.desc}</p>
-                          </div>
-                          <div className={cn("text-xs font-black italic", bono.color === "emerald" ? "text-emerald-500" : bono.color === "yellow" ? "text-yellow-500" : "text-slate-600")}>
-                            {bono.amount}
-                          </div>
+                          <div className="space-y-1"><h4 className="text-sm font-black text-white uppercase italic">{bono.title}</h4><p className="text-[10px] text-slate-500 font-bold">{bono.desc}</p></div>
+                          <div className={cn("text-xs font-black italic", bono.color === "emerald" ? "text-emerald-500" : "text-yellow-500")}>{bono.amount}</div>
                         </div>
-                        <button 
-                          disabled={bono.status !== "DISPONIBLE"}
-                          className={cn(
-                            "w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all",
-                            bono.status === "RECLAMADO" ? "bg-emerald-500/10 text-emerald-500 cursor-default" :
-                            bono.status === "DISPONIBLE" ? "bg-white text-slate-900 hover:scale-105 shadow-xl" : "bg-white/5 text-slate-600 cursor-not-allowed"
-                          )}
-                        >
-                          {bono.status}
-                        </button>
+                        <button disabled={bono.status !== "DISPONIBLE"} className={cn("w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest", bono.status === "RECLAMADO" ? "bg-emerald-500/10 text-emerald-500" : "bg-white text-slate-900")}>{bono.status}</button>
                       </div>
                     ))}
                   </div>
-
-                  {/* Canje de Código Promocional */}
-                  <div className="bg-[#1a1c26] border border-white/10 rounded-3xl p-8 space-y-6">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center text-cyan-500">
-                        <Coins className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-black text-white uppercase italic">¿Tienes un código?</h3>
-                        <p className="text-xs text-slate-500">Ingresa cupones especiales para recibir bonos instantáneos.</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col md:flex-row gap-3">
-                      <input 
-                        type="text" 
-                        placeholder="EJ: BATTLE2026"
-                        className="flex-1 bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white font-black placeholder:text-slate-800 focus:outline-none focus:border-cyan-500/50 transition-colors"
-                      />
-                      <button className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-4 md:py-0 md:px-8 rounded-2xl font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-cyan-500/20 w-full md:w-auto">
-                        Canjear
-                      </button>
-                    </div>
-                  </div>
                 </div>
               )}
-
-              {/* CONTENIDO: MISIONES (DESAFÍOS DINÁMICOS) */}
               {activeTab === "misiones" && (
                 <div className="space-y-6">
-                  {/* Banner de Misiones */}
                   <div className="bg-[#0b0e14] border border-white/10 rounded-3xl p-10 relative overflow-hidden">
-                    <div className="absolute -right-10 -bottom-10 opacity-5 pointer-events-none">
-                      <Target className="w-64 h-64 text-white" />
-                    </div>
-                    <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
-                      <div className="space-y-4">
-                        <h2 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter uppercase leading-none">Desafíos <br /> <span className="text-emerald-400">Diarios</span></h2>
-                        <p className="text-slate-500 text-sm font-bold uppercase tracking-widest">Completa retos y acumula coins gratis</p>
-                      </div>
-                      <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl px-8 py-4 text-center">
-                        <p className="text-[10px] font-black text-emerald-500 uppercase mb-1">Misiones Hoy</p>
-                        <p className="text-2xl font-black text-white italic">2 / 5</p>
-                      </div>
+                    <div className="relative z-10 space-y-4">
+                      <h2 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter uppercase leading-none">Desafíos <br /> <span className="text-emerald-400">Diarios</span></h2>
                     </div>
                   </div>
-
-                  {/* Lista de Misiones Reales */}
                   <div className="space-y-4">
                     {misionesList.map((mision, i) => {
                       const isCompleted = completedMissions.includes(mision.id);
                       const Icon = mision.icon;
-
                       return (
-                        <div key={i} className="bg-[#0b0e14]/60 border border-white/5 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-8 group hover:bg-white/[0.02] transition-all">
+                        <div key={i} className="bg-[#0b0e14]/60 border border-white/5 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-8 group">
                           <div className="flex-1 space-y-6 w-full">
                             <div className="flex items-center gap-5">
-                              <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg", 
-                                isCompleted ? "bg-emerald-500/20 text-emerald-500 shadow-emerald-500/10" : "bg-white/5 text-slate-500")}>
-                                <Icon className="w-7 h-7" />
-                              </div>
-                              <div>
-                                <h4 className="text-xl font-black text-white uppercase italic tracking-tight leading-none mb-2">{mision.title}</h4>
-                                <p className="text-xs text-slate-500 font-bold">{mision.desc}</p>
-                              </div>
+                              <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center", isCompleted ? "bg-emerald-500/20 text-emerald-500" : "bg-white/5 text-slate-500")}><Icon className="w-7 h-7" /></div>
+                              <div><h4 className="text-xl font-black text-white uppercase italic leading-none mb-2">{mision.title}</h4><p className="text-xs text-slate-500 font-bold">{mision.desc}</p></div>
                             </div>
-                            
-                            <div className="space-y-3">
-                              <div className="flex justify-between items-end text-[10px] font-black uppercase tracking-widest">
-                                <span className="text-slate-600">Progreso de Misión</span>
-                                <span className={cn(isCompleted ? "text-emerald-400" : "text-white")}>
-                                  {mision.total ? `${mision.progress || 0} / ${mision.total}` : (isCompleted ? "1 / 1" : "0 / 1")}
-                                </span>
-                              </div>
-                              <div className="h-2.5 w-full bg-slate-900 rounded-full overflow-hidden border border-white/5">
-                                <motion.div 
-                                  initial={{ width: 0 }}
-                                  animate={{ width: isCompleted ? "100%" : (mision.total ? `${((mision.progress || 0) / mision.total) * 100}%` : "0%") }}
-                                  transition={{ duration: 1.5, ease: "easeOut" }}
-                                  className={cn("h-full rounded-full", 
-                                    isCompleted ? "bg-emerald-500" : "bg-gradient-to-r from-cyan-500 to-blue-600")} 
-                                />
-                              </div>
-                            </div>
+                            <div className="h-2.5 w-full bg-slate-900 rounded-full overflow-hidden border border-white/5"><div className={cn("h-full rounded-full", isCompleted ? "bg-emerald-500" : "bg-gradient-to-r from-cyan-500 to-blue-600")} style={{ width: isCompleted ? "100%" : (mision.total ? `${((mision.progress || 0) / mision.total) * 100}%` : "0%") }} /></div>
                           </div>
-
                           <div className="text-center md:text-right flex flex-col items-center md:items-end gap-4 min-w-[150px]">
-                            <div className="space-y-1">
-                              <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Recompensa</p>
-                              <div className="text-2xl font-black text-white italic tracking-tighter">{mision.reward}</div>
-                            </div>
-                            
+                            <div className="text-2xl font-black text-white italic tracking-tighter">{mision.reward}</div>
                             {mision.url ? (
-                              <button 
-                                onClick={() => handleCompleteMission(mision.id, mision.url!)}
-                                disabled={isCompleted || loadingMission === mision.id}
-                                className={cn(
-                                  "px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl flex items-center gap-2",
-                                  isCompleted 
-                                    ? "bg-emerald-500/10 text-emerald-500 cursor-default" 
-                                    : "bg-white text-slate-900 hover:scale-105"
-                                )}
-                              >
-                                {isCompleted ? "Completado" : loadingMission === mision.id ? "Procesando..." : (
-                                  <>
-                                    Ir a {mision.color === "pink" ? "Instagram" : "Facebook"}
-                                    <ExternalLink className="w-3 h-3" />
-                                  </>
-                                )}
+                              <button onClick={() => handleCompleteMission(mision.id, mision.url!)} disabled={isCompleted || loadingMission === mision.id} className={cn("px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest", isCompleted ? "bg-emerald-500/10 text-emerald-500" : "bg-white text-slate-900")}>
+                                {isCompleted ? "Completado" : loadingMission === mision.id ? "Procesando..." : "Ir a Misión"}
                               </button>
-                            ) : (
-                              <div className="px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest bg-white/5 text-slate-700">
-                                En Curso
-                              </div>
-                            )}
+                            ) : <div className="px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest bg-white/5 text-slate-700">En Curso</div>}
                           </div>
                         </div>
                       );
@@ -630,7 +447,6 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
                   </div>
                 </div>
               )}
-
               <button onClick={() => setActiveTab(null)} className="w-full py-4 text-slate-500 hover:text-white text-[10px] font-black uppercase tracking-[0.3em] transition-colors pt-10">Volver al Ranking Principal</button>
             </motion.div>
           )}

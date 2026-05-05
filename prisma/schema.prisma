@@ -231,6 +231,7 @@ model Battle {
   winnerId      String?
   winner        User?     @relation("BattleWinner", fields: [winnerId], references: [id])
   totalPrize    Float     @default(0)
+  accumulated   Float     @default(0) // Pozo que se suma si cae en "Acumulado"
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

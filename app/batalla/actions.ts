@@ -24,27 +24,69 @@ export async function getBattleParticipants(battleId: string) {
 
     if (!battle) return { success: false, error: "Batalla no encontrada" };
 
+    const participants = battle.participants.map((p: any) => ({
+      name: p.user.name || "Jugador",
+      id: p.user.playerId || "000000",
+      isUser: false, 
+      userId: p.userId
+    }));
+
     return {
       success: true,
-      participants: battle.participants.map((p: any) => ({
-        name: p.user.name || "Jugador",
-        id: p.user.playerId || "000000",
-        isUser: false, // Se marcará en el cliente
-        userId: p.userId
-      }))
+      status: battle.status,
+      winnerIndex: battle.winnerId ? participants.findIndex(p => p.userId === battle.winnerId) : -1,
+      winnerName: battle.winner?.name || null,
+      accumulated: battle.accumulated,
+      participants: participants
     };
   } catch (error) {
     return { success: false, error: "Error al obtener participantes" };
   }
 }
 
-// Obtener batallas en espera reales
+// Obtener la batalla activa del usuario (para reconexión inteligente)
+export async function getUserActiveBattle() {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false };
+
+  try {
+    const participation = await (prisma as any).battleParticipant.findFirst({
+      where: { 
+        userId: session.user.id,
+        battle: { status: { in: ["WAITING", "IN_PROGRESS"] } }
+      },
+      include: { battle: { include: { creator: { select: { name: true } } } } }
+    });
+
+    if (!participation) return { success: false };
+
+    const b = participation.battle;
+    
+    // Solo auto-reentrar si la batalla YA EMPEZÓ (IN_PROGRESS)
+    if (b.status !== "IN_PROGRESS") {
+      return { success: false };
+    }
+
+    return {
+      success: true,
+      battle: {
+        id: b.id,
+        creator: b.creator.name || "Jugador",
+        priceUsd: b.priceUsd,
+        priceCoins: b.priceCoins,
+        joinedCount: 0, 
+        color: b.priceUsd >= 5 ? "from-yellow-500 to-amber-600" : 
+               b.priceUsd >= 1 ? "from-slate-400 to-slate-600" : "from-amber-700 to-amber-900"
+      }
+    };
+  } catch (error) {
+    return { success: false };
+  }
+}
+
 export async function getWaitingBattles() {
   try {
-    const battleModel = (prisma as any).battle || (prisma as any).Battle;
-    if (!battleModel) return { success: true, battles: [] };
-
-    const battles = await battleModel.findMany({
+    const battles = await (prisma as any).battle.findMany({
       where: { status: "WAITING" },
       include: {
         creator: { select: { name: true } },
@@ -77,9 +119,6 @@ export async function createBattle(priceUsd: number, priceCoins: number) {
   if (!session?.user?.id) return { success: false, error: "No autorizado" };
 
   try {
-    const battleModel = (prisma as any).battle || (prisma as any).Battle;
-    if (!battleModel) return { success: false, error: "Servidor de batallas no listo" };
-
     return await prisma.$transaction(async (tx) => {
       // 1. Verificar balance (SOLO si no es de prueba $0)
       if (priceUsd > 0) {
@@ -109,7 +148,7 @@ export async function createBattle(priceUsd: number, priceCoins: number) {
           participants: {
             create: {
               userId: session.user.id,
-              position: 0 // El creador siempre toma la posición 0
+              position: 0 
             }
           }
         }
@@ -128,9 +167,6 @@ export async function joinBattle(battleId: string) {
   if (!session?.user?.id) return { success: false, error: "No autorizado" };
 
   try {
-    const battleModel = (prisma as any).battle || (prisma as any).Battle;
-    if (!battleModel) return { success: false, error: "Servidor de batallas no listo" };
-
     return await prisma.$transaction(async (tx) => {
       const battle = await (tx as any).battle.findUnique({
         where: { id: battleId },
@@ -166,7 +202,7 @@ export async function joinBattle(battleId: string) {
         data: {
           battleId,
           userId: session.user.id,
-          position: battle.participants.length // Siguiente posición disponible
+          position: battle.participants.length 
         }
       });
 
@@ -196,6 +232,92 @@ export async function joinBattle(battleId: string) {
     });
   } catch (error: any) {
     return { success: false, error: error.message || "Error al unirse" };
+  }
+}
+
+// Resolver la batalla (decidir ganador y pagar)
+export async function resolveBattle(battleId: string) {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, error: "No autorizado" };
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const battle = await (tx as any).battle.findUnique({
+        where: { id: battleId },
+        include: { 
+          participants: { 
+            include: { user: true },
+            orderBy: { position: "asc" } 
+          } 
+        }
+      });
+
+      if (!battle) throw new Error("Batalla no encontrada");
+      if (battle.status === "COMPLETED") {
+        return { 
+          success: true, 
+          winnerIndex: battle.participants.findIndex((p: any) => p.userId === battle.winnerId),
+          winnerName: battle.winner?.name,
+          isJackpot: false
+        };
+      }
+      
+      if (battle.participants.length < 6) throw new Error("Aún faltan jugadores");
+
+      // Probabilidad de caer en Acumulado (1 entre 7)
+      const roll = Math.floor(Math.random() * 7); // 0-6
+      
+      if (roll === 6) {
+        // CAYÓ EN ACUMULADO
+        const roundPot = battle.priceCoins * 6;
+        await (tx as any).battle.update({
+          where: { id: battleId },
+          data: { 
+            accumulated: { increment: roundPot },
+            status: "IN_PROGRESS" // Sigue abierta para girar
+          }
+        });
+
+        return { 
+          success: true, 
+          winnerIndex: 6, // Índice del Acumulado
+          isJackpot: true,
+          newPool: battle.accumulated + roundPot
+        };
+      } else {
+        // CAYÓ EN UN JUGADOR (índice 0-5)
+        const winnerParticipant = battle.participants[roll];
+        const totalPrize = (battle.priceCoins * 6) + battle.accumulated;
+
+        // Finalizar batalla
+        await (tx as any).battle.update({
+          where: { id: battleId },
+          data: {
+            status: "COMPLETED",
+            winnerId: winnerParticipant.userId,
+            totalPrize: totalPrize
+          }
+        });
+
+        // Pagar al ganador (si no es prueba)
+        if (battle.priceUsd > 0) {
+          await tx.user.update({
+            where: { id: winnerParticipant.userId },
+            data: { balance: { increment: totalPrize } }
+          });
+        }
+
+        return { 
+          success: true, 
+          winnerIndex: roll, 
+          winnerName: winnerParticipant.user.name,
+          isJackpot: false,
+          totalWon: totalPrize
+        };
+      }
+    });
+  } catch (error: any) {
+    return { success: false, error: error.message || "Error al resolver batalla" };
   }
 }
 

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import confetti from "canvas-confetti";
 import { toast } from "sonner";
 import { sendFriendRequest } from "@/app/mensajes/actions";
+import { getWaitingBattles, createBattle, joinBattle, getBattleParticipants, leaveBattle, resolveBattle, getUserActiveBattle } from "./actions";
 
 interface RouletteArenaProps {
   initialBalance: number;
@@ -24,16 +25,13 @@ interface BattleRoom {
 }
 
 const ROOM_TYPES = [
-  { id: 0, name: "PRUEBA", priceUsd: 0.00, priceCoins: 0, color: "from-emerald-500 to-emerald-800", accent: "text-emerald-400" },
   { id: 1, name: "BRONCE", priceUsd: 0.50, priceCoins: 500, color: "from-amber-700 to-amber-900", accent: "text-amber-500" },
   { id: 2, name: "PLATA", priceUsd: 1.00, priceCoins: 1000, color: "from-slate-400 to-slate-600", accent: "text-slate-300" },
   { id: 3, name: "ORO", priceUsd: 5.00, priceCoins: 5000, color: "from-yellow-500 to-amber-600", accent: "text-yellow-400" },
   { id: 4, name: "DIAMANTE", priceUsd: 10.00, priceCoins: 10000, color: "from-cyan-500 to-blue-600", accent: "text-cyan-400" },
 ];
 
-// Añadimos un color dorado para el segmento Acumulado
 const SEGMENT_COLORS = ["#FF6B6B", "#FFD93D", "#6BCB77", "#4D96FF", "#937DC2", "#FF8B13", "#FFD700"];
-import { getWaitingBattles, createBattle, joinBattle, getBattleParticipants, leaveBattle } from "./actions";
 
 export const RouletteArena = ({ initialBalance, initialBattles, currentUserId }: RouletteArenaProps) => {
   const [balance, setBalance] = useState(initialBalance);
@@ -49,26 +47,34 @@ export const RouletteArena = ({ initialBalance, initialBattles, currentUserId }:
   const [showJackpotMessage, setShowJackpotMessage] = useState(false);
   const [errorModal, setErrorModal] = useState<{show: boolean, amountUsd: number} | null>(null);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
-  
-  // Nuevo estado para el pozo acumulado
   const [accumulatedPool, setAccumulatedPool] = useState(0);
+
+  // Reconexión automática al montar
+  useEffect(() => {
+    const checkActive = async () => {
+      const res = await getUserActiveBattle();
+      if (res.success && res.battle) {
+        setCurrentRoom(res.battle as BattleRoom);
+      }
+    };
+    checkActive();
+  }, []);
 
   // Refrescar salas reales periódicamente
   useEffect(() => {
     const interval = setInterval(async () => {
-      if (isSpinning) return;
+      if (isSpinning || currentRoom) return;
       const res = await getWaitingBattles();
       if (res.success && res.battles) {
         setActiveRooms(res.battles);
       }
     }, 5000);
     return () => clearInterval(interval);
-  }, [isSpinning]);
+  }, [isSpinning, currentRoom]);
 
-  // Sincronizar participantes de la sala actual en tiempo real
+  // Sincronizar participantes y estado de la batalla
   useEffect(() => {
     if (!currentRoom || isSpinning) return;
-
     const syncParticipants = async () => {
       const res = await getBattleParticipants(currentRoom.id);
       if (res.success && (res as any).participants) {
@@ -76,31 +82,99 @@ export const RouletteArena = ({ initialBalance, initialBattles, currentUserId }:
           ...p,
           isUser: p.userId === currentUserId
         })));
+        
+        // Sincronizar el pozo acumulado real de la DB
+        if ((res as any).accumulated !== undefined) {
+          setAccumulatedPool((res as any).accumulated);
+        }
+        
+        // Si el servidor ya marcó la batalla como COMPLETED (porque otro le dio a girar)
+        if ((res as any).status === "COMPLETED" && !isSpinning && !winner) {
+          handleVisualSpin((res as any).winnerIndex, (res as any).winnerName, false);
+        }
       } else if ((res as any).error === "Batalla no encontrada") {
-        // La sala ha sido cerrada por el creador
-        const creatorName = currentRoom?.creator || "el creador";
         setCurrentRoom(null);
         setJoinedPlayers([]);
-        toast.info(`Sala cerrada por ${creatorName}`);
       }
     };
 
     const interval = setInterval(syncParticipants, 3000);
     return () => clearInterval(interval);
-  }, [currentRoom, isSpinning]);
+  }, [currentRoom, isSpinning, winner]);
 
   // Protección contra salida accidental
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (currentRoom) {
+      if (currentRoom && !isSpinning) {
         e.preventDefault();
         e.returnValue = "";
       }
     };
-
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [currentRoom]);
+  }, [currentRoom, isSpinning]);
+
+  const handleVisualSpin = (targetWinnerIdx: number, winnerName: string, isJackpot: boolean) => {
+    if (isSpinning) return;
+    setIsSpinning(true);
+    
+    const segmentAngle = 360 / 7;
+    // Rotar 15 vueltas + el ángulo necesario para el ganador
+    const extraRotation = 360 - (targetWinnerIdx * segmentAngle);
+    const totalRotation = rotation + (360 * 15) + extraRotation;
+    
+    setRotation(totalRotation);
+
+    setTimeout(() => {
+      setIsSpinning(false);
+      
+      if (isJackpot) {
+        // CAYÓ EN ACUMULADO
+        setShowJackpotMessage(true);
+        setTimeout(() => {
+          setShowJackpotMessage(false);
+          // Permitir girar de nuevo (el estado ya está listo)
+        }, 4000);
+      } else {
+        // CAYÓ EN UN JUGADOR
+        setWinner(targetWinnerIdx);
+        confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 } });
+
+        const totalPrize = (currentRoom?.priceCoins || 0) * 6 + accumulatedPool;
+
+        setTimeout(() => {
+          setShowWinnerModal(true);
+          if (joinedPlayers[targetWinnerIdx]?.isUser) {
+            setBalance(prev => prev + totalPrize);
+          }
+        }, 1000);
+
+        setTimeout(() => {
+          setShowWinnerModal(false);
+          setJoinedPlayers([]);
+          setCurrentRoom(null);
+          setWinner(null);
+          setAccumulatedPool(0);
+        }, 8000);
+      }
+    }, 7000);
+  };
+
+  const handleStartSpin = async () => {
+    if (joinedPlayers.length < 6 || !currentRoom || isSpinning) return;
+    
+    setShowLuckMessage(true);
+    const res = await resolveBattle(currentRoom.id);
+    
+    setTimeout(() => {
+      setShowLuckMessage(false);
+      if (res.success) {
+        handleVisualSpin((res as any).winnerIndex, (res as any).winnerName, (res as any).isJackpot);
+      } else {
+        toast.error((res as any).error || "Error al iniciar el giro");
+      }
+    }, 2000);
+  };
 
   const handleCreateRoom = async () => {
     if (balance < selectedRoomType.priceCoins && selectedRoomType.priceUsd > 0) {
@@ -108,25 +182,20 @@ export const RouletteArena = ({ initialBalance, initialBattles, currentUserId }:
       return;
     }
 
-    // Llamada al servidor para crear la batalla real
     const res = await createBattle(selectedRoomType.priceUsd, selectedRoomType.priceCoins);
-    
     if (res.success) {
-      if (selectedRoomType.priceUsd > 0) {
-        setBalance(prev => prev - selectedRoomType.priceCoins);
-      }
+      if (selectedRoomType.priceUsd > 0) setBalance(prev => prev - selectedRoomType.priceCoins);
       
       const battleId = (res as any).battleId;
-      const myRoom: BattleRoom = {
+      setCurrentRoom({
         id: battleId, 
         creator: "TÚ", 
         priceUsd: selectedRoomType.priceUsd,
         priceCoins: selectedRoomType.priceCoins, 
         joinedCount: 1, 
         color: selectedRoomType.color
-      };
-      setCurrentRoom(myRoom);
-      setJoinedPlayers([{ name: "TÚ", id: "YOU", isUser: true }]);
+      });
+      setJoinedPlayers([{ name: "TÚ", id: "YOU", isUser: true, userId: currentUserId }]);
       toast.success("Sala creada. Esperando oponentes...");
     } else {
       toast.error((res as any).error || "No se pudo crear la sala");
@@ -140,13 +209,9 @@ export const RouletteArena = ({ initialBalance, initialBattles, currentUserId }:
     }
 
     const res = await joinBattle(room.id);
-    
     if (res.success) {
-      if (room.priceUsd > 0) {
-        setBalance(prev => prev - room.priceCoins);
-      }
+      if (room.priceUsd > 0) setBalance(prev => prev - room.priceCoins);
       setCurrentRoom(room);
-      // Usar los participantes reales devueltos por el servidor
       if ((res as any).participants) {
         setJoinedPlayers((res as any).participants.map((p: any) => ({
           ...p,
@@ -160,103 +225,29 @@ export const RouletteArena = ({ initialBalance, initialBattles, currentUserId }:
   };
 
   const handleLeaveRoom = async () => {
-    if (!currentRoom) return;
-    
+    if (!currentRoom || isSpinning) return;
     const res = await leaveBattle(currentRoom.id);
     if (res.success) {
+      if (currentRoom.priceUsd > 0) setBalance(prev => prev + currentRoom.priceCoins);
       setCurrentRoom(null);
       setJoinedPlayers([]);
       setShowLeaveConfirm(false);
-      
-      // Actualizar balance local (ya se actualizó en la DB)
-      if (currentRoom.priceUsd > 0) {
-        setBalance(prev => prev + currentRoom.priceCoins);
-      }
-      
       toast.info((res as any).roomClosed ? "Sala cerrada y dinero devuelto" : "Has salido de la sala");
     } else {
       toast.error((res as any).error || "No se pudo salir de la sala");
     }
   };
 
-  // ELIMINADA LA SIMULACIÓN DE JUGADORES QUE SE UNEN SOLOS
-  // Ahora solo se unen jugadores reales mediante la base de datos.
-  useEffect(() => {
-    if (currentRoom && joinedPlayers.length < 6 && !isSpinning) {
-      // Aquí podrías poner un aviso de "Esperando más jugadores..."
-    }
-  }, [joinedPlayers, currentRoom, isSpinning]);
-
-  const handleStartSpin = () => {
-    if (joinedPlayers.length < 6) return;
-    setShowLuckMessage(true);
-    setTimeout(() => {
-      setShowLuckMessage(false);
-      setIsSpinning(true);
-      const spinDegrees = (360 * 15) + Math.floor(Math.random() * 360);
-      const newRotation = rotation + spinDegrees;
-      setRotation(newRotation);
-
-      setTimeout(() => {
-        setIsSpinning(false);
-        const finalRotation = newRotation % 360;
-        
-        // CÁLCULO CON 7 SEGMENTOS (6 JUGADORES + 1 ACUMULADO)
-        // Cada segmento mide 360 / 7 = ~51.42 grados.
-        const segmentAngle = 360 / 7;
-        // Ajustamos con offset para que el segmento 0 esté al norte
-        const winIdx = Math.floor(((360 - (finalRotation % 360) + (segmentAngle / 2)) % 360) / segmentAngle);
-        
-        if (winIdx === 6) {
-          // CAYÓ EN ACUMULADO
-          const roomTotal = currentRoom!.priceCoins * 6;
-          setAccumulatedPool(prev => prev + roomTotal);
-          setShowJackpotMessage(true);
-          
-          setTimeout(() => {
-            setShowJackpotMessage(false);
-            // El botón de girar se volverá a habilitar solo
-          }, 4000);
-        } else {
-          // CAYÓ EN UN JUGADOR
-          setWinner(winIdx);
-          confetti({ particleCount: 200, spread: 90, origin: { y: 0.6 }, colors: SEGMENT_COLORS });
-
-          const roomTotal = currentRoom!.priceCoins * 6;
-          const totalPrize = roomTotal + accumulatedPool;
-
-          setTimeout(() => {
-            setShowWinnerModal(true);
-            if (joinedPlayers[winIdx]?.isUser) {
-              setBalance(prev => prev + totalPrize);
-            }
-          }, 1000);
-
-          setTimeout(() => {
-            setShowWinnerModal(false);
-            setJoinedPlayers([]);
-            setCurrentRoom(null);
-            setWinner(null);
-            setAccumulatedPool(0); // Reset pool after someone wins
-          }, 8000);
-        }
-      }, 7000);
-    }, 2000);
-  };
-
   const handleAddFriend = async (playerId: string) => {
     if (playerId === "YOU" || playerId.length !== 6) return;
     const res = await sendFriendRequest(playerId);
-    if (res.success) {
-      toast.success("¡Solicitud de amistad enviada!");
-    } else {
-      toast.error(res.error);
-    }
+    if (res.success) toast.success("¡Solicitud de amistad enviada!");
+    else toast.error((res as any).error);
   };
 
   return (
     <div className="space-y-12 pb-32">
-      {/* MENSAJES GLOBALES */}
+      {/* MODALES DE ERROR Y ÉXITO */}
       <AnimatePresence>
         {errorModal?.show && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
@@ -281,22 +272,6 @@ export const RouletteArena = ({ initialBalance, initialBattles, currentUserId }:
         )}
       </AnimatePresence>
 
-      {/* MENSAJE DE ACUMULADO */}
-      <AnimatePresence>
-        {showJackpotMessage && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[300] flex flex-col items-center justify-center bg-yellow-600/90 backdrop-blur-xl p-6 text-center">
-            <motion.div initial={{ scale: 0.8 }} animate={{ scale: [0.8, 1.1, 1] }} className="flex flex-col items-center">
-              <Landmark className="w-20 h-20 text-white mb-6 animate-bounce" />
-              <h2 className="text-5xl md:text-8xl font-black text-white italic tracking-tighter uppercase leading-none">¡SE ACUMULÓ!</h2>
-              <p className="text-yellow-100 text-xl md:text-3xl font-bold mt-4 uppercase">EL PREMIO CRECE. PRESIONA GIRAR DE NUEVO.</p>
-              <div className="mt-8 px-8 py-4 bg-white rounded-2xl text-yellow-600 font-black text-4xl shadow-2xl">
-                + ${( (currentRoom?.priceUsd || 0) * 6).toFixed(2)} USD
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <AnimatePresence>
         {showWinnerModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[300] bg-[#050a1f]/95 backdrop-blur-3xl flex flex-col items-center justify-center p-6 text-center">
@@ -307,9 +282,6 @@ export const RouletteArena = ({ initialBalance, initialBattles, currentUserId }:
               <h2 className="text-[10px] md:text-sm font-black text-yellow-500 uppercase tracking-[0.3em] md:tracking-[0.5em]">BATALLA TERMINADA</h2>
               <div className="text-3xl md:text-7xl font-black text-white tracking-tighter uppercase break-words px-4 leading-tight">{winner !== null && joinedPlayers[winner]?.name}</div>
               <div className="text-xl md:text-3xl font-black text-emerald-400 italic">GANÓ ${( (currentRoom?.priceUsd || 0) * 6 + (accumulatedPool / 1000) ).toFixed(2)} USD</div>
-              {accumulatedPool > 0 && (
-                <div className="text-sm font-black text-yellow-500 uppercase tracking-widest">¡SE LLEVÓ EL POZO ACUMULADO!</div>
-              )}
             </motion.div>
           </motion.div>
         )}
@@ -337,9 +309,7 @@ export const RouletteArena = ({ initialBalance, initialBattles, currentUserId }:
         {showLeaveConfirm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[400] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md">
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="bg-[#0b0e14] border border-white/10 rounded-[3rem] p-10 max-w-md w-full text-center shadow-2xl">
-              <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <AlertCircle className="w-10 h-10 text-red-500" />
-              </div>
+              <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6"><AlertCircle className="w-10 h-10 text-red-500" /></div>
               <h2 className="text-2xl font-black text-white uppercase italic tracking-tighter mb-4">¿Abandonar Sala?</h2>
               <p className="text-slate-400 font-medium mb-8">Si sales ahora, podrías perder tu lugar en la batalla.</p>
               <div className="grid grid-cols-2 gap-4">
@@ -354,151 +324,64 @@ export const RouletteArena = ({ initialBalance, initialBattles, currentUserId }:
       {currentRoom && (
         <div className="bg-[#0b0e14]/60 border border-white/5 rounded-[4rem] pt-32 pb-10 px-6 md:p-16 backdrop-blur-3xl relative shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-500">
           
-          {/* Marcador Permanente de Pozo Acumulado (Elevación Máxima) */}
           <div className="absolute top-6 left-0 right-0 md:left-auto md:right-8 z-30 flex flex-col items-center md:items-end gap-1 px-6">
             <div className="px-3 py-1 bg-yellow-500 rounded-full flex items-center gap-2 shadow-lg shadow-yellow-500/20">
               <Landmark className="w-3 h-3 text-yellow-950" />
               <span className="text-[9px] font-black text-yellow-950 uppercase tracking-widest">Pozo Acumulado</span>
             </div>
-            <div className="text-2xl md:text-3xl font-black text-white italic tracking-tighter">
-              ${(accumulatedPool / 1000).toFixed(2)}
-            </div>
+            <div className="text-2xl md:text-3xl font-black text-white italic tracking-tighter">${(accumulatedPool / 1000).toFixed(2)}</div>
           </div>
 
           <div className="flex flex-col lg:flex-row items-center gap-12 md:gap-24">
-            {/* Contenedor de la Ruleta */}
             <div className="relative w-full max-w-[340px] md:max-w-[480px] aspect-square flex-shrink-0">
-              {/* Puntero / Flecha */}
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-40">
                 <motion.div animate={isSpinning ? { rotate: [-5, 5, -5], y: [0, 2, 0] } : {}} transition={{ duration: 0.1, repeat: Infinity }} className="w-12 h-14 bg-white shadow-2xl flex items-center justify-center" style={{ clipPath: "polygon(0% 0%, 100% 0%, 50% 100%)" }}>
                   <div className="w-8 h-10 bg-gradient-to-b from-red-500 to-red-700" style={{ clipPath: "polygon(0% 0%, 100% 0%, 50% 100%)" }} />
                 </motion.div>
               </div>
               
-              <motion.div 
-                animate={{ rotate: rotation }} 
-                transition={{ duration: 7, ease: [0.2, 0, 0, 1] }} 
-                className="w-full h-full rounded-full border-[10px] md:border-[15px] border-white/10 relative overflow-hidden shadow-2xl bg-[#0b0e14]"
-                style={{ 
-                  background: `conic-gradient(from ${360 / 7 / -2 - 90}deg, ${SEGMENT_COLORS[0]} 0deg 51.4deg, ${SEGMENT_COLORS[1]} 51.4deg 102.8deg, ${SEGMENT_COLORS[2]} 102.8deg 154.2deg, ${SEGMENT_COLORS[3]} 154.2deg 205.7deg, ${SEGMENT_COLORS[4]} 205.7deg 257.1deg, ${SEGMENT_COLORS[5]} 257.1deg 308.5deg, ${SEGMENT_COLORS[6]} 308.5deg 360deg)` 
-                }}
-              >
+              <motion.div animate={{ rotate: rotation }} transition={{ duration: 7, ease: [0.2, 0, 0, 1] }} className="w-full h-full rounded-full border-[10px] md:border-[15px] border-white/10 relative overflow-hidden shadow-2xl bg-[#0b0e14]" style={{ background: `conic-gradient(from ${360 / 7 / -2 - 90}deg, ${SEGMENT_COLORS[0]} 0deg 51.4deg, ${SEGMENT_COLORS[1]} 51.4deg 102.8deg, ${SEGMENT_COLORS[2]} 102.8deg 154.2deg, ${SEGMENT_COLORS[3]} 154.2deg 205.7deg, ${SEGMENT_COLORS[4]} 205.7deg 257.1deg, ${SEGMENT_COLORS[5]} 257.1deg 308.5deg, ${SEGMENT_COLORS[6]} 308.5deg 360deg)` }}>
                 {[...Array(7)].map((_, i) => (
-                  <div 
-                    key={i} 
-                    className="absolute top-0 left-1/2 w-full h-[35%] flex flex-col items-center justify-center pt-2" 
-                    style={{ transform: `translateX(-50%) rotate(${i * (360/7)}deg)`, transformOrigin: "50% 143%" }}
-                  >
-                    <span className={cn(
-                      "font-black text-[10px] md:text-[18px] uppercase tracking-tighter [writing-mode:vertical-rl] rotate-180 drop-shadow-sm max-h-[85%] overflow-hidden text-center leading-none",
-                      i === 6 ? "text-yellow-950" : "text-slate-900"
-                    )}>
-                      {i === 6 ? "ACUMULADO" : (joinedPlayers[i] ? `${joinedPlayers[i].name} #${joinedPlayers[i].id}` : "VACÍO")}
-                    </span>
+                  <div key={i} className="absolute top-0 left-1/2 w-full h-[35%] flex flex-col items-center justify-center pt-2" style={{ transform: `translateX(-50%) rotate(${i * (360/7)}deg)`, transformOrigin: "50% 143%" }}>
+                    <span className={cn("font-black text-[10px] md:text-[18px] uppercase tracking-tighter [writing-mode:vertical-rl] rotate-180 drop-shadow-sm max-h-[85%] overflow-hidden text-center leading-none", i === 6 ? "text-yellow-950" : "text-slate-900")}>{i === 6 ? "ACUMULADO" : (joinedPlayers[i] ? `${joinedPlayers[i].name}` : "VACÍO")}</span>
                   </div>
-                ))}
-                {[...Array(7)].map((_, i) => (
-                  <div key={`pin-${i}`} className="absolute top-0 left-1/2 w-1.5 h-6 bg-white/20 shadow-sm" style={{ transform: `translateX(-50%) rotate(${i * (360/7) + (360/7/2)}deg)`, transformOrigin: "50% 833%", borderRadius: "0 0 10px 10px" }} />
                 ))}
               </motion.div>
               
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 md:w-32 md:h-32 rounded-full bg-white border-[8px] md:border-[12px] border-[#0b0e14] flex items-center justify-center shadow-2xl z-20">
-                <Coins className="w-10 h-10 md:w-16 md:h-16 text-yellow-500" />
-              </div>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 md:w-32 md:h-32 rounded-full bg-white border-[8px] md:border-[12px] border-[#0b0e14] flex items-center justify-center shadow-2xl z-20"><Coins className="w-10 h-10 md:w-16 md:h-16 text-yellow-500" /></div>
             </div>
 
             <div className="flex-1 w-full space-y-6">
-              {/* Botón Móvil */}
-              <div className="lg:hidden w-full">
-                {joinedPlayers.length === 6 ? (
-                  <button onClick={handleStartSpin} disabled={isSpinning} className="w-full py-5 rounded-3xl bg-gradient-to-r from-yellow-400 to-orange-500 text-yellow-950 font-black text-lg uppercase tracking-widest shadow-xl animate-pulse">🚀 GIRAR RULETA</button>
-                ) : (
-                  <button disabled className="w-full py-5 rounded-3xl bg-slate-800 text-slate-500 font-black text-sm uppercase tracking-widest opacity-50">ESPERANDO JUGADORES...</button>
-                )}
-              </div>
-
-                {/* PANEL DE PREMIO TOTAL */}
-              <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 relative overflow-hidden group transition-all hover:bg-white/[0.08]">
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Trophy className="w-4 h-4 text-yellow-500" />
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">Premio Total Estimado</span>
-                  </div>
-                  <div className="text-6xl md:text-8xl font-black text-white tracking-tighter italic leading-none mb-4">
-                    ${(currentRoom.priceUsd * 6 + accumulatedPool/1000).toFixed(2)}
-                  </div>
-                  
-                  {/* Desglose de Dinero */}
-                  <div className="flex flex-wrap gap-4 pt-4 border-t border-white/5">
-                    <div className="flex flex-col">
-                      <span className="text-[8px] font-black text-slate-500 uppercase">Apuestas (6x)</span>
-                      <span className="text-sm font-black text-white">${(currentRoom.priceUsd * 6).toFixed(2)}</span>
-                    </div>
-                    {accumulatedPool > 0 && (
-                      <div className="flex flex-col">
-                        <span className="text-[8px] font-black text-yellow-500 uppercase">Pozo Acumulado</span>
-                        <span className="text-sm font-black text-yellow-500 animate-pulse">+ ${(accumulatedPool / 1000).toFixed(2)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {/* Efecto de brillo de fondo */}
-                <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-yellow-500/10 blur-[80px] rounded-full group-hover:bg-yellow-500/20 transition-all" />
+              <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8">
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Premio Total</h3>
+                <div className="text-5xl md:text-7xl font-black text-white tracking-tighter italic">${(currentRoom.priceUsd * 6).toFixed(2)}</div>
               </div>
 
               <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-6 space-y-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Sala ({joinedPlayers.length}/6)</h4>
-                  <div className="flex gap-1.5">
-                    {[...Array(6)].map((_, i) => (
-                      <div key={i} className={cn("w-2.5 h-2.5 rounded-full", i < joinedPlayers.length ? "bg-emerald-500" : "bg-white/10")} />
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
+                <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">Sala ({joinedPlayers.length}/6)</h4>
+                <div className="space-y-2">
                   {joinedPlayers.map((player, i) => (
-                    <div key={i} className={cn("flex items-center justify-between p-4 rounded-2xl border transition-all", player.isUser ? "bg-cyan-500/10 border-cyan-500/30" : "bg-white/5 border-white/5")}>
-                      <div className="flex items-center gap-4">
-                        <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black", player.isUser ? "bg-cyan-500 text-white" : "bg-slate-800 text-slate-500")}>{player.name[0]}</div>
-                        <div className="flex flex-col">
-                          <span className="text-xs font-black text-white uppercase leading-none mb-1">{player.name}</span>
-                          <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest">ID: {player.id}</span>
-                        </div>
-                      </div>
+                    <div key={i} className={cn("flex items-center justify-between p-4 rounded-2xl border", player.isUser ? "bg-cyan-500/10 border-cyan-500/30" : "bg-white/5 border-white/5")}>
+                      <div className="flex items-center gap-4"><div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-[10px] font-black text-white">{player.name[0]}</div><span className="text-xs font-black text-white uppercase">{player.name}</span></div>
                       <div className="flex items-center gap-2">
-                        {!player.isUser && (
-                          <button 
-                            onClick={() => handleAddFriend(player.id)}
-                            className="p-2 bg-white/5 hover:bg-cyan-500 hover:text-slate-950 rounded-lg transition-all"
-                            title="Agregar Amigo"
-                          >
-                            <UserPlus className="w-4 h-4" />
-                          </button>
-                        )}
+                        {!player.isUser && <button onClick={() => handleAddFriend(player.id)} className="p-2 bg-white/5 hover:bg-cyan-500 hover:text-slate-950 rounded-lg transition-all"><UserPlus className="w-4 h-4" /></button>}
                         <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                       </div>
                     </div>
                   ))}
                 </div>
-                {/* Botón para Salir de la Sala */}
-                {!isSpinning && (
-                  <div className="pt-4 mt-2 border-t border-white/5">
-                    <button 
-                      onClick={() => setShowLeaveConfirm(true)}
-                      className="w-full py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest transition-all border border-red-500/20"
-                    >
-                      ABANDONAR SALA
-                    </button>
-                  </div>
-                )}
+                {!isSpinning && <button onClick={() => setShowLeaveConfirm(true)} className="w-full py-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest border border-red-500/20">ABANDONAR SALA</button>}
               </div>
               
-              {/* Botón Escritorio */}
-              <div className="hidden lg:block">
+              <div className="w-full">
                 {joinedPlayers.length === 6 ? (
-                  <button onClick={handleStartSpin} disabled={isSpinning} className="w-full py-7 rounded-[2.5rem] bg-gradient-to-r from-yellow-400 to-orange-500 text-yellow-950 font-black text-xl uppercase tracking-[0.3em] shadow-2xl animate-pulse transition-all hover:scale-105">🚀 GIRAR RULETA</button>
+                  currentRoom.creator === "TÚ" ? (
+                    <button onClick={handleStartSpin} disabled={isSpinning} className="w-full py-7 rounded-[2.5rem] bg-gradient-to-r from-yellow-400 to-orange-500 text-yellow-950 font-black text-xl uppercase tracking-[0.3em] shadow-2xl animate-pulse">🚀 GIRAR RULETA</button>
+                  ) : (
+                    <button disabled className="w-full py-7 rounded-[2.5rem] bg-indigo-500/20 text-indigo-400 font-black text-xl uppercase tracking-[0.2em] cursor-wait">ESPERANDO AL CREADOR...</button>
+                  )
                 ) : (
-                  <button disabled className="w-full py-7 rounded-[2.5rem] bg-slate-800 text-slate-500 font-black text-xl uppercase tracking-[0.2em] cursor-not-allowed">ESPERANDO JUGADORES...</button>
+                  <button disabled className="w-full py-7 rounded-[2.5rem] bg-slate-800 text-slate-500 font-black text-xl uppercase tracking-[0.2em] opacity-50 cursor-not-allowed">ESPERANDO JUGADORES...</button>
                 )}
               </div>
             </div>
