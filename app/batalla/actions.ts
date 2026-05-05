@@ -34,7 +34,7 @@ export async function getBattleParticipants(battleId: string) {
     return {
       success: true,
       status: battle.status,
-      winnerIndex: battle.winnerId ? participants.findIndex(p => p.userId === battle.winnerId) : -1,
+      winnerIndex: battle.winnerId ? participants.findIndex((p: any) => p.userId === battle.winnerId) : -1,
       winnerName: battle.winner?.name || null,
       accumulated: battle.accumulated,
       participants: participants
