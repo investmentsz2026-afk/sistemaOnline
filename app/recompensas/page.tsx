@@ -44,6 +44,12 @@ export default async function RecompensasPage() {
     console.warn("AVISO: El modelo 'userMission' aún no está disponible en la caché de Prisma.");
   }
 
+  // Traemos los datos del usuario actual para tener su PlayerID (#0000)
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { playerId: true }
+  });
+
   return (
     <main className="min-h-screen bg-[#050a1f] text-white overflow-x-hidden">
       {/* Navigation */}
@@ -53,6 +59,7 @@ export default async function RecompensasPage() {
         <RewardsClient 
           users={users} 
           currentUserId={session.user.id!} 
+          currentPlayerId={currentUser?.playerId || "0000"} // ID para AdGem
           userRole={session.user.role}
           completedMissions={completedIds}
         />

@@ -22,7 +22,8 @@ import {
   Share2 as Instagram,
   Share2 as Facebook,
   ExternalLink,
-  UserPlus
+  UserPlus,
+  Gamepad2
 } from "lucide-react";
 import { completeSocialMission } from "./actions";
 import { sendFriendRequest } from "@/app/mensajes/actions";
@@ -43,12 +44,13 @@ interface LeaderboardUser {
 interface RewardsClientProps {
   users: LeaderboardUser[];
   currentUserId: string;
+  currentPlayerId: string;
   userRole: string;
   completedMissions: string[];
 }
 
-export const RewardsClient = ({ users, currentUserId, userRole, completedMissions }: RewardsClientProps) => {
-  const [activeTab, setActiveTab] = useState<"misiones" | "bonos" | "referidos" | null>(null);
+export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole, completedMissions }: RewardsClientProps) => {
+  const [activeTab, setActiveTab] = useState<"misiones" | "bonos" | "referidos" | "adgem" | null>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, mins: 0, secs: 0 });
   const [copied, setCopied] = useState(false);
   const searchParams = useSearchParams();
@@ -203,6 +205,7 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
           <div className="flex items-center justify-around max-w-2xl mx-auto h-16 md:h-20">
             {[
               { id: "misiones", label: "Misiones" },
+              { id: "adgem", label: "Gana Monedas" },
               { id: "bonos", label: "Bonos" },
               { id: "referidos", label: "Invita a Amigos" },
             ].map((tab) => (
@@ -444,6 +447,51 @@ export const RewardsClient = ({ users, currentUserId, userRole, completedMission
                         </div>
                       );
                     })}
+                  </div>
+                </div>
+              )}
+              {activeTab === "adgem" && (
+                <div className="space-y-6">
+                  <div className="bg-gradient-to-br from-indigo-900 via-blue-900 to-cyan-900 rounded-3xl p-8 md:p-12 relative overflow-hidden border border-cyan-500/30 shadow-[0_0_50px_rgba(6,182,212,0.2)] group">
+                    <div className="absolute top-0 right-0 p-12 opacity-10 group-hover:scale-110 transition-transform duration-1000">
+                      <ExternalLink className="w-48 h-48 text-cyan-400" />
+                    </div>
+                    <div className="relative z-10 space-y-6">
+                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full">
+                        <Star className="w-3 h-3 text-cyan-400 fill-cyan-400" />
+                        <span className="text-[9px] font-black text-cyan-400 uppercase tracking-widest">Ofertas Disponibles</span>
+                      </div>
+                      <h2 className="text-3xl md:text-5xl font-black text-white italic tracking-tighter uppercase leading-none">
+                        Gana <span className="text-cyan-400">Coins Gratis</span> <br /> Probando Apps
+                      </h2>
+                      <p className="text-cyan-100/70 text-sm font-medium max-w-md">
+                        Instala juegos, llega a niveles específicos y recibe recompensas automáticas en tu balance de batalla.
+                      </p>
+                      
+                      {/* BOTÓN CON ID DE JUGADOR DINÁMICO */}
+                      <a 
+                        href={`https://api.adgem.com/v1/wall?appid=TU_APP_ID&playerid=${currentPlayerId.replace("#", "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-3 bg-white text-slate-950 px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 hover:bg-cyan-400 transition-all shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
+                      >
+                        Abrir Muro de Ofertas
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      { step: "01", title: "Busca un Juego", desc: "Elige las ofertas que más monedas paguen." },
+                      { step: "02", title: "Cumple la Meta", desc: "Sigue las instrucciones (ej: Nivel 10)." },
+                      { step: "03", title: "¡Cobra tu Premio!", desc: "Tus monedas se suman al instante." },
+                    ].map((step, i) => (
+                      <div key={i} className="bg-[#0b0e14] border border-white/5 rounded-2xl p-6 space-y-2">
+                        <span className="text-cyan-500 font-black italic text-lg">{step.step}</span>
+                        <h4 className="text-xs font-black text-white uppercase">{step.title}</h4>
+                        <p className="text-[10px] text-slate-500 font-bold">{step.desc}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

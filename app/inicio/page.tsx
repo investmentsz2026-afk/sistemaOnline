@@ -5,12 +5,13 @@ import { Benefits } from "@/components/landing/Benefits";
 import { Stats } from "@/components/landing/Stats";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { Showcase } from "@/components/landing/Showcase";
-import { CTA } from "@/components/landing/CTA";
 import { Footer } from "@/components/landing/Footer";
 import { Offerwalls } from "@/components/landing/Offerwalls";
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { LifeBuoy } from "lucide-react";
 
 export default async function InicioPage() {
   const session = await auth();
@@ -97,6 +98,25 @@ export default async function InicioPage() {
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Instalación en curso</span>
                 </div>
               </div>
+            </div>
+          </div>
+          {/* Banner de Soporte */}
+          <div className="mt-12 mb-12">
+            <div className="bg-gradient-to-r from-indigo-900/40 to-blue-900/40 backdrop-blur-xl border border-white/10 rounded-[2rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl">
+              <div className="flex items-center gap-5 text-center md:text-left">
+                <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10">
+                  <LifeBuoy className="w-7 h-7 text-cyan-400" />
+                </div>
+                <div>
+                  <p className="text-white font-black uppercase italic tracking-tight text-lg">¿Tienes algún reclamo o problema?</p>
+                  <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Habla con soporte ahora mismo</p>
+                </div>
+              </div>
+              <Link href="/soporte">
+                <button className="w-full md:w-auto bg-white text-slate-950 px-10 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-cyan-400 hover:scale-105 transition-all shadow-xl active:scale-95">
+                  Ir a Soporte
+                </button>
+              </Link>
             </div>
           </div>
         </div>

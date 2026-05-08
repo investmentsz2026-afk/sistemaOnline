@@ -16,7 +16,8 @@ import {
   Search,
   UserCircle,
   Home,
-  DollarSign
+  DollarSign,
+  LifeBuoy
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MotionButton } from "@/components/ui/motion/motion-button";
@@ -62,6 +63,12 @@ const routes = [
     icon: DollarSign,
     href: "/dashboard/withdrawals",
     color: "text-yellow-400",
+  },
+  {
+    label: "Soporte",
+    icon: LifeBuoy,
+    href: "/dashboard/soporte",
+    color: "text-emerald-400",
   },
   {
     label: "Mi Perfil",
