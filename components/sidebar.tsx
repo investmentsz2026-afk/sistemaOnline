@@ -17,7 +17,8 @@ import {
   UserCircle,
   Home,
   DollarSign,
-  LifeBuoy
+  LifeBuoy,
+  Gift
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MotionButton } from "@/components/ui/motion/motion-button";
@@ -57,6 +58,12 @@ const routes = [
     icon: Users,
     href: "/dashboard/users",
     color: "text-violet-400",
+  },
+  {
+    label: "Canjeos",
+    icon: Gift,
+    href: "/dashboard/canjeos",
+    color: "text-fuchsia-400",
   },
   {
     label: "Retiros",

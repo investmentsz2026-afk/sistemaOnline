@@ -11,7 +11,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { LifeBuoy } from "lucide-react";
+import { LifeBuoy, TrendingUp, ArrowRight } from "lucide-react";
 
 export default async function InicioPage() {
   const session = await auth();
@@ -71,6 +71,44 @@ export default async function InicioPage() {
                       ${(balance / 1000).toFixed(2)} <span className="text-[10px] text-slate-500 uppercase ml-1">USD</span>
                     </span>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* NUEVO: Banner de Ofertas de Anuncios (Monetización) */}
+          <div className="mb-12">
+            <div className="bg-gradient-to-r from-[#0f172a] to-[#1e1b4b] border border-cyan-500/20 rounded-[2.5rem] p-8 relative overflow-hidden group shadow-2xl hover:border-cyan-500/40 transition-all duration-500">
+              {/* Animación de fondo */}
+              <div className="absolute top-0 right-0 w-full h-full bg-[url('/grid.svg')] opacity-10"></div>
+              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-cyan-500/20 blur-[60px] rounded-full group-hover:bg-cyan-500/30 transition-all"></div>
+              
+              <div className="flex flex-col lg:flex-row items-center justify-between gap-8 relative z-10">
+                <div className="flex items-center gap-6 text-center lg:text-left flex-col lg:flex-row">
+                  <div className="w-20 h-20 rounded-3xl bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20 shadow-inner group-hover:scale-110 transition-transform duration-500">
+                    <TrendingUp className="w-10 h-10 text-cyan-400" />
+                  </div>
+                  <div className="space-y-2">
+                    <h2 className="text-2xl md:text-3xl font-black text-white uppercase italic tracking-tighter leading-none">
+                      ¡Gana <span className="text-cyan-400">Puntos Gratis</span> ahora!
+                    </h2>
+                    <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">
+                      Mira anuncios especiales y canjea tus puntos por <span className="text-white">Dólares Reales</span>
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+                  <div className="bg-white/5 px-6 py-3 rounded-2xl border border-white/5 backdrop-blur-md hidden sm:block">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] block mb-1">Tasa de Cambio</span>
+                    <span className="text-sm font-black text-emerald-400">1000 Pts = $0.50 BC</span>
+                  </div>
+                  <Link href="/ofertas" className="w-full lg:w-auto">
+                    <button className="w-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-12 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all shadow-[0_10px_40px_rgba(34,211,238,0.2)] hover:scale-105 active:scale-95 flex items-center justify-center gap-3">
+                      Ir a Mis Ofertas
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </Link>
                 </div>
               </div>
             </div>

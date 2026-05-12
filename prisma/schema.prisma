@@ -66,6 +66,7 @@ model User {
   battlesWon        Battle[]          @relation("BattleWinner")
   participations    BattleParticipant[]
   supportTickets    SupportTicket[]
+  pointRedemptions  PointsRedemption[]
 
   @@map("users")
 }
@@ -268,4 +269,18 @@ model SupportTicket {
   updatedAt   DateTime @updatedAt
 
   @@map("support_tickets")
+}
+
+model PointsRedemption {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pointsAmount  Int
+  bcAmount      Float
+  status        String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  adminNotes    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("points_redemptions")
 }
