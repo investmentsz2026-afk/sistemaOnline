@@ -18,8 +18,9 @@ export const MobileBottomNav = () => {
   if (isAdminOrMod) return null;
 
   const routes = [
-    { label: "GANE", icon: Gamepad2, href: "/inicio" },
-    { label: "BATALLA", icon: Percent, href: "/batalla" },
+    { label: "GANE", icon: Percent, href: "/inicio" },
+    { label: "JUEGOS", icon: Gamepad2, href: "/juegos" },
+    { label: "BATALLA", icon: Layers, href: "/batalla" },
     { label: "CHAT", icon: MessageSquare, href: "/mensajes" },
     { label: "BILLETERA", icon: Wallet, href: "/retiro" },
     { label: "RANKING", icon: Medal, href: "/recompensas" },

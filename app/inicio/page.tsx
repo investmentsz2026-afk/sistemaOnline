@@ -11,7 +11,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { LifeBuoy, TrendingUp, ArrowRight } from "lucide-react";
+import { LifeBuoy, TrendingUp, ArrowRight, Gamepad2 } from "lucide-react";
 
 export default async function InicioPage() {
   const session = await auth();
@@ -115,27 +115,58 @@ export default async function InicioPage() {
           </div>
 
           {/* Placeholder Section requested by user */}
-          <div className="bg-[#0b0e14]/60 border border-white/10 border-dashed rounded-[2.5rem] p-12 md:p-20 text-center">
-            <div className="max-w-md mx-auto space-y-6">
-              <div className="relative w-20 h-20 mx-auto mb-8">
-                <div className="absolute inset-0 bg-cyan-500/20 rounded-3xl blur-2xl animate-pulse"></div>
-                <div className="relative w-full h-full bg-[#050a1f] border border-white/10 rounded-3xl flex items-center justify-center">
-                  <div className="w-3 h-3 bg-cyan-400 rounded-full animate-ping"></div>
+          {/* Banner Promocional de Juegos */}
+          <Link href="/juegos" className="block group">
+            <div className="relative overflow-hidden bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border border-cyan-500/30 rounded-[2.5rem] p-8 md:p-12 transition-all hover:border-cyan-400 shadow-2xl shadow-cyan-500/10">
+              <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform duration-700">
+                <Gamepad2 className="w-32 h-32 text-cyan-400 rotate-12" />
+              </div>
+              <div className="relative z-10 space-y-4">
+                <div className="flex items-center gap-3">
+                  <span className="px-3 py-1 bg-cyan-500 text-slate-900 text-[9px] font-black uppercase tracking-widest rounded-full">Nuevo</span>
+                  <span className="text-[10px] font-black text-cyan-400 uppercase tracking-[0.2em]">Play to Earn</span>
+                </div>
+                <h2 className="text-3xl md:text-5xl font-black text-white italic uppercase tracking-tighter leading-none">
+                  ¡Juega aquí los <br /> <span className="text-cyan-400">Mejores Juegos!</span>
+                </h2>
+                <p className="text-slate-400 text-sm md:text-base font-medium max-w-md">
+                  Diviértete con títulos premium y gana puntos automáticamente por cada minuto de juego. Sin descargas.
+                </p>
+                <div className="pt-4 flex items-center gap-4">
+                  <div className="bg-white text-slate-950 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest group-hover:bg-cyan-400 transition-colors shadow-xl">
+                    Jugar Ahora
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                    <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">+10 Pts cada 5 min</span>
+                  </div>
                 </div>
               </div>
-              <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter italic">
-                Sincronizando <span className="text-cyan-400">Nuevos Juegos</span>
-              </h2>
-              <p className="text-slate-500 text-sm md:text-base font-medium leading-relaxed">
-                Nuestros ingenieros están instalando las mejores ofertas y juegos exclusivos para ti. 
-                Vuelve en unos minutos para empezar a ganar monedas reales.
-              </p>
-              <div className="pt-4">
-                <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full">
-                  <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full"></div>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Instalación en curso</span>
-                </div>
+            </div>
+          </Link>
+
+          {/* Módulo de Juegos Reales: Capsbit Media */}
+          <div className="bg-[#0b0e14]/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-500 via-blue-500 to-cyan-500 animate-pulse"></div>
+            
+            <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Servidor de Juegos Activo</span>
               </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest">Capsbit Media Engine</span>
+              </div>
+            </div>
+
+            <div className="relative w-full aspect-[9/16] md:aspect-video min-h-[600px]">
+              <iframe 
+                src={`https://offerwall.capsbit.com/d50f409faabee3a513bb2450233eee/${session.user.id}`}
+                className="absolute inset-0 w-full h-full border-none"
+                title="Capsbit Media Games"
+                allow="clipboard-write; fullscreen"
+                scrolling="yes"
+              ></iframe>
             </div>
           </div>
           {/* Banner de Soporte */}
