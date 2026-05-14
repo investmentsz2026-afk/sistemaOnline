@@ -20,18 +20,18 @@ export default async function JuegosPage() {
 
   // Lista de juegos populares de GameMonetize (URLs Reales HTML5)
   const games = [
-    { id: "g1", title: "Puzzledom One Line", category: "Puzzle", thumb: "https://gamemonetize.com/token/puzzledom-one-line.png", url: "https://html5.gamemonetize.co/uevrcg9lfez7iipsw4z91s5inewmeso5/" },
-    { id: "g2", title: "Mr Fight", category: "Acción", thumb: "https://gamemonetize.com/token/mr-fight.png", url: "https://html5.gamemonetize.co/df7qc4evnbkrv1w49yuscgev12p112be/" },
-    { id: "g3", title: "Sniper Mission War", category: "Disparos", thumb: "https://gamemonetize.com/token/sniper-mission-war.png", url: "https://html5.gamemonetize.co/lgrku412hrxdytv220yo4lr2ugh8sb6j/" },
-    { id: "g4", title: "Toca Life Adventure", category: "Aventura", thumb: "https://gamemonetize.com/token/toca-life-adventure.png", url: "https://html5.gamemonetize.co/wl12iuserxdpc4y0b8vcjoz6alzccms5/" },
-    { id: "g5", title: "Super Huggie Bros", category: "Plataformas", thumb: "https://gamemonetize.com/token/super-huggie-bros.png", url: "https://html5.gamemonetize.co/3ex0z77vqo2zz4wmellpculd54tqyowc/" },
-    { id: "g6", title: "Rescue Rainbow Monster", category: "Acción", thumb: "https://gamemonetize.com/token/rescue-from-rainbow-monster-online.png", url: "https://html5.gamemonetize.co/747v6poddba7w1b1n39dihdf6tmz34gn/" },
-    { id: "g7", title: "Hit Masters Rush", category: "Acción", thumb: "https://gamemonetize.com/token/hit-masters-rush.png", url: "https://html5.gamemonetize.co/bnwny2zvzjcwaa7lrthoje1ri364fvmg/" },
-    { id: "g8", title: "FoodHead Fighters", category: "Lucha", thumb: "https://gamemonetize.com/token/foodhead-fighters.png", url: "https://html5.gamemonetize.co/95rpyg86xtlqy4a68ahmdzbs8sgrwmfr/" },
-    { id: "g9", title: "Rider Online Pro", category: "Carreras", thumb: "https://gamemonetize.com/token/rider-online-pro.png", url: "https://html5.gamemonetize.co/xqxcsqazsozjzy71jb1hn0a54dorg91d/" },
-    { id: "g10", title: "Monsters Attack", category: "Estrategia", thumb: "https://gamemonetize.com/token/monsters-attack-impostor-squad.png", url: "https://html5.gamemonetize.co/l5s3o2it4qyzc217qldfio11urspud5r/" },
-    { id: "g11", title: "Stickman Survive", category: "Supervivencia", thumb: "https://gamemonetize.com/token/stickman-night-survive.png", url: "https://html5.gamemonetize.co/zx1x0yknh5emq3mzop2fvbpimsxgpz9h/" },
-    { id: "g12", title: "Scary Mad Shark", category: "Acción", thumb: "https://gamemonetize.com/token/scary-mad-shark.png", url: "https://html5.gamemonetize.co/3eo4jyqsvfweb9iw5h4l9u5qlf8si07m/" },
+    { id: "g1", title: "Puzzledom One Line", category: "Puzzle", thumb: "https://img.gamemonetize.com/uevrcg9lfez7iipsw4z91s5inewmeso5/512x384.jpg", url: "https://html5.gamemonetize.co/uevrcg9lfez7iipsw4z91s5inewmeso5/" },
+    { id: "g2", title: "Mr Fight", category: "Acción", thumb: "https://img.gamemonetize.com/df7qc4evnbkrv1w49yuscgev12p112be/512x384.jpg", url: "https://html5.gamemonetize.co/df7qc4evnbkrv1w49yuscgev12p112be/" },
+    { id: "g3", title: "Sniper Mission War", category: "Disparos", thumb: "https://img.gamemonetize.com/lgrku412hrxdytv220yo4lr2ugh8sb6j/512x384.jpg", url: "https://html5.gamemonetize.co/lgrku412hrxdytv220yo4lr2ugh8sb6j/" },
+    { id: "g4", title: "Toca Life Adventure", category: "Aventura", thumb: "https://img.gamemonetize.com/wl12iuserxdpc4y0b8vcjoz6alzccms5/512x384.jpg", url: "https://html5.gamemonetize.co/wl12iuserxdpc4y0b8vcjoz6alzccms5/" },
+    { id: "g5", title: "Super Huggie Bros", category: "Plataformas", thumb: "https://img.gamemonetize.com/3ex0z77vqo2zz4wmellpculd54tqyowc/512x384.jpg", url: "https://html5.gamemonetize.co/3ex0z77vqo2zz4wmellpculd54tqyowc/" },
+    { id: "g6", title: "Rescue Rainbow Monster", category: "Acción", thumb: "https://img.gamemonetize.com/747v6poddba7w1b1n39dihdf6tmz34gn/512x384.jpg", url: "https://html5.gamemonetize.co/747v6poddba7w1b1n39dihdf6tmz34gn/" },
+    { id: "g7", title: "Hit Masters Rush", category: "Acción", thumb: "https://img.gamemonetize.com/bnwny2zvzjcwaa7lrthoje1ri364fvmg/512x384.jpg", url: "https://html5.gamemonetize.co/bnwny2zvzjcwaa7lrthoje1ri364fvmg/" },
+    { id: "g8", title: "FoodHead Fighters", category: "Lucha", thumb: "https://img.gamemonetize.com/95rpyg86xtlqy4a68ahmdzbs8sgrwmfr/512x384.jpg", url: "https://html5.gamemonetize.co/95rpyg86xtlqy4a68ahmdzbs8sgrwmfr/" },
+    { id: "g9", title: "Rider Online Pro", category: "Carreras", thumb: "https://img.gamemonetize.com/xqxcsqazsozjzy71jb1hn0a54dorg91d/512x384.jpg", url: "https://html5.gamemonetize.co/xqxcsqazsozjzy71jb1hn0a54dorg91d/" },
+    { id: "g10", title: "Monsters Attack", category: "Estrategia", thumb: "https://img.gamemonetize.com/l5s3o2it4qyzc217qldfio11urspud5r/512x384.jpg", url: "https://html5.gamemonetize.co/l5s3o2it4qyzc217qldfio11urspud5r/" },
+    { id: "g11", title: "Stickman Survive", category: "Supervivencia", thumb: "https://img.gamemonetize.com/zx1x0yknh5emq3mzop2fvbpimsxgpz9h/512x384.jpg", url: "https://html5.gamemonetize.co/zx1x0yknh5emq3mzop2fvbpimsxgpz9h/" },
+    { id: "g12", title: "Scary Mad Shark", category: "Acción", thumb: "https://img.gamemonetize.com/3eo4jyqsvfweb9iw5h4l9u5qlf8si07m/512x384.jpg", url: "https://html5.gamemonetize.co/3eo4jyqsvfweb9iw5h4l9u5qlf8si07m/" },
   ];
 
   return (
