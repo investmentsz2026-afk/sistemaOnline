@@ -112,8 +112,8 @@ export const GameClient = ({ initialGames }: GameClientProps) => {
               exit={{ opacity: 0, scale: 0.95 }}
               className="flex-1 flex flex-col h-full w-full"
             >
-              {/* Header del Juego - Optimizado para NO ser tapado */}
-              <div className="pt-safe px-4 pb-4 border-b border-white/5 flex items-center justify-between bg-black/50 backdrop-blur-md">
+              {/* Header del Juego - AHORA EMPIEZA DEBAJO DEL NAVBAR */}
+              <div className="mt-[80px] md:mt-0 pt-4 px-4 pb-4 border-b border-white/5 flex items-center justify-between bg-black/50 backdrop-blur-md">
                 <div className="flex items-center gap-4">
                   <button 
                     onClick={() => setSelectedGame(null)}
@@ -122,20 +122,20 @@ export const GameClient = ({ initialGames }: GameClientProps) => {
                     <X className="w-5 h-5" />
                   </button>
                   <div className="flex flex-col">
-                    <h2 className="text-sm md:text-xl font-black text-white italic uppercase tracking-tighter truncate max-w-[150px] md:max-w-none">
+                    <h2 className="text-sm md:text-xl font-black text-white italic uppercase tracking-tighter truncate max-w-[120px] md:max-w-none">
                       {selectedGame.title}
                     </h2>
                     <div className="flex items-center gap-2 md:gap-3">
                       <div className="flex items-center gap-1">
                         <Clock className="w-2.5 h-2.5 text-cyan-400" />
-                        <span className="text-[8px] md:text-[10px] font-black text-white uppercase tabular-nums">
+                        <span className="text-[9px] md:text-[10px] font-black text-white uppercase tabular-nums">
                           {formatTime(playTime)}
                         </span>
                       </div>
                       <span className="text-slate-800">|</span>
                       <div className="flex items-center gap-1">
                         <Trophy className="w-2.5 h-2.5 text-emerald-400" />
-                        <span className="text-[8px] md:text-[10px] font-black text-emerald-400 uppercase tracking-tighter">
+                        <span className="text-[9px] md:text-[10px] font-black text-emerald-400 uppercase tracking-tighter">
                           +{pointsEarned} Pts
                         </span>
                       </div>
@@ -149,19 +149,21 @@ export const GameClient = ({ initialGames }: GameClientProps) => {
                 </div>
               </div>
 
-              {/* Iframe del Juego - CENTRADO Y RESPONSIVE TOTAL */}
-              <div className="flex-1 w-full h-full bg-black relative flex items-center justify-center p-0">
-                <iframe 
-                  src={selectedGame.url}
-                  className="w-full h-full border-none"
-                  title={selectedGame.title}
-                  allow="clipboard-write; fullscreen"
-                  scrolling="no"
-                ></iframe>
+              {/* Iframe del Juego - CON PADDING PARA QUE EL ANUNCIO NO SE SALGA */}
+              <div className="flex-1 w-full h-full bg-black relative flex items-center justify-center p-2 md:p-8">
+                <div className="w-full h-full max-w-5xl mx-auto rounded-xl overflow-hidden shadow-2xl shadow-cyan-500/5">
+                  <iframe 
+                    src={selectedGame.url}
+                    className="w-full h-full border-none"
+                    title={selectedGame.title}
+                    allow="clipboard-write; fullscreen"
+                    scrolling="no"
+                  ></iframe>
+                </div>
               </div>
 
-              {/* Barra de Progreso Inferior - Fuera del área de botones del celular */}
-              <div className="h-1 bg-white/5 w-full relative mb-safe">
+              {/* Barra de Progreso Inferior - SEPARADA DEL MENU DE ABAJO */}
+              <div className="h-1 bg-white/5 w-full relative mb-[90px] md:mb-0">
                 <motion.div 
                   className="absolute inset-y-0 left-0 bg-cyan-500 shadow-[0_0_10px_#06b6d4]"
                   style={{ width: `${(playTime % REWARD_INTERVAL) / REWARD_INTERVAL * 100}%` }}
