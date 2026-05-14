@@ -102,61 +102,68 @@ export const GameClient = ({ initialGames }: GameClientProps) => {
         ))}
       </div>
 
-      {/* Modal de Juego Activo */}
+      {/* Modal de Juego Activo - Z-INDEX SUPREMO para que nada lo tape */}
       <AnimatePresence>
         {selectedGame && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-2xl">
+          <div className="fixed inset-0 z-[9999] flex flex-col bg-black/98 backdrop-blur-3xl overflow-hidden">
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="w-full h-full flex flex-col"
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="flex-1 flex flex-col h-full w-full"
             >
-              {/* Header del Juego */}
-              <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-                <div className="flex items-center gap-6">
+              {/* Header del Juego - Optimizado para NO ser tapado */}
+              <div className="pt-safe px-4 pb-4 border-b border-white/5 flex items-center justify-between bg-black/50 backdrop-blur-md">
+                <div className="flex items-center gap-4">
                   <button 
                     onClick={() => setSelectedGame(null)}
-                    className="w-12 h-12 bg-white/5 hover:bg-red-500/20 text-white hover:text-red-500 rounded-2xl flex items-center justify-center transition-all"
+                    className="w-10 h-10 md:w-12 md:h-12 bg-white/5 hover:bg-red-500/20 text-white hover:text-red-500 rounded-xl md:rounded-2xl flex items-center justify-center transition-all"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-5 h-5" />
                   </button>
-                  <div>
-                    <h2 className="text-xl font-black text-white italic uppercase tracking-tighter">{selectedGame.title}</h2>
-                    <div className="flex items-center gap-3">
-                      <Clock className="w-3 h-3 text-cyan-400" />
-                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                        Tiempo: <span className="text-white">{formatTime(playTime)}</span>
-                      </span>
-                      <span className="text-slate-700">|</span>
-                      <Trophy className="w-3 h-3 text-emerald-400" />
-                      <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
-                        Ganado: <span className="text-emerald-400">+{pointsEarned} Pts</span>
-                      </span>
+                  <div className="flex flex-col">
+                    <h2 className="text-sm md:text-xl font-black text-white italic uppercase tracking-tighter truncate max-w-[150px] md:max-w-none">
+                      {selectedGame.title}
+                    </h2>
+                    <div className="flex items-center gap-2 md:gap-3">
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-2.5 h-2.5 text-cyan-400" />
+                        <span className="text-[8px] md:text-[10px] font-black text-white uppercase tabular-nums">
+                          {formatTime(playTime)}
+                        </span>
+                      </div>
+                      <span className="text-slate-800">|</span>
+                      <div className="flex items-center gap-1">
+                        <Trophy className="w-2.5 h-2.5 text-emerald-400" />
+                        <span className="text-[8px] md:text-[10px] font-black text-emerald-400 uppercase tracking-tighter">
+                          +{pointsEarned} Pts
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
                 
-                <div className="hidden md:flex items-center gap-4 bg-emerald-500/10 px-4 py-2 rounded-full border border-emerald-500/20">
+                <div className="flex items-center gap-2 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
                   <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></div>
-                  <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Acreditación Activa</span>
+                  <span className="text-[7px] md:text-[9px] font-black text-emerald-500 uppercase tracking-widest whitespace-nowrap">Acreditación Activa</span>
                 </div>
               </div>
 
-              {/* Iframe del Juego */}
-              <div className="flex-1 bg-black relative">
+              {/* Iframe del Juego - CENTRADO Y RESPONSIVE TOTAL */}
+              <div className="flex-1 w-full h-full bg-black relative flex items-center justify-center p-0">
                 <iframe 
                   src={selectedGame.url}
-                  className="absolute inset-0 w-full h-full border-none"
+                  className="w-full h-full border-none"
                   title={selectedGame.title}
-                  allow="fullscreen"
+                  allow="clipboard-write; fullscreen"
+                  scrolling="no"
                 ></iframe>
               </div>
 
-              {/* Barra de Progreso Inferior */}
-              <div className="h-1 bg-white/5 w-full relative">
+              {/* Barra de Progreso Inferior - Fuera del área de botones del celular */}
+              <div className="h-1 bg-white/5 w-full relative mb-safe">
                 <motion.div 
-                  className="absolute inset-y-0 left-0 bg-cyan-500"
+                  className="absolute inset-y-0 left-0 bg-cyan-500 shadow-[0_0_10px_#06b6d4]"
                   style={{ width: `${(playTime % REWARD_INTERVAL) / REWARD_INTERVAL * 100}%` }}
                 />
               </div>
