@@ -67,6 +67,8 @@ model User {
   participations    BattleParticipant[]
   supportTickets    SupportTicket[]
   pointRedemptions  PointsRedemption[]
+  gameProgress      GameProgress[]
+  gameRankings      GameRanking[]
 
   @@map("users")
 }
@@ -283,4 +285,63 @@ model PointsRedemption {
   updatedAt     DateTime @updatedAt
 
   @@map("points_redemptions")
+}
+
+// Modelos de Juegos HTML5 Premium
+model GameProgress {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId         String   // "runner" o "puzzle"
+  level          Int      @default(1)
+  xp             Int      @default(0)
+  coins          Int      @default(0)
+  highScore      Int      @default(0)
+  skinsUnlocked  String   @default("default") // Lista separada por comas (ej: "default,neon_runner")
+  currentSkin    String   @default("default")
+  stats          String   @default("{}")      // Estadísticas serializadas en JSON string (ej: partidas jugadas, tiempo total, etc.)
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  @@unique([userId, gameId])
+  @@map("game_progress")
+}
+
+model GameMission {
+  id          String   @id @default(cuid())
+  gameId      String   // "runner" o "puzzle"
+  title       String
+  description String
+  targetType  String   // "distance", "coins", "playTime", "score", "gamesPlayed"
+  targetValue Int
+  rewardCoins Int
+  rewardXp    Int
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@map("game_missions")
+}
+
+model UserGameMissionProgress {
+  id           String   @id @default(cuid())
+  userId       String
+  missionId    String
+  currentValue Int      @default(0)
+  isCompleted  Boolean  @default(false)
+  isClaimed    Boolean  @default(false)
+  updatedAt    DateTime @default(now()) @updatedAt
+
+  @@unique([userId, missionId])
+  @@map("user_game_mission_progress")
+}
+
+model GameRanking {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId    String   // "runner" o "puzzle"
+  score     Int
+  level     Int      @default(1)
+  createdAt DateTime @default(now())
+
+  @@map("game_rankings")
 }
