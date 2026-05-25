@@ -69,6 +69,7 @@ export default function LabyrinthPage() {
   const [isRewardedOpen, setIsRewardedOpen] = useState(false);
   const [revivesUsed, setRevivesUsed] = useState(0);
   const [triggerRestart, setTriggerRestart] = useState(false);
+  const [triggerRevive, setTriggerRevive] = useState(false);
 
   useEffect(() => {
     loadProgress();
@@ -102,10 +103,8 @@ export default function LabyrinthPage() {
   };
 
   const handleGameOver = async (stats: { score: number; coins: number; levelsCompleted: number }) => {
-    setGameActive(false);
-
     if (stats.score > 0) {
-      // Ganó
+      setGameActive(false);
       setLevelSuccess(true);
       setCoinsEarned(stats.coins);
 
@@ -148,6 +147,7 @@ export default function LabyrinthPage() {
       }
     } else {
       // Perdió (tiempo agotado o colisión con enemigo)
+      // Mantenemos gameActive = true para conservar la escena de Phaser activa en el fondo
       setLevelFailed(true);
     }
   };
@@ -257,9 +257,8 @@ export default function LabyrinthPage() {
     setIsRewardedOpen(false);
     setRevivesUsed(prev => prev + 1);
     setLevelFailed(false);
-    setGameActive(true);
-    setActiveBooster("time"); // auto-usa el booster de tiempo extra para revivir
-    toast.success("¡Revivido! Recibiste tiempo extra para continuar en el laberinto.");
+    setTriggerRevive(true); // Firing event into phaser canvas
+    toast.success("¡Revivido! Tienes unos segundos de inmunidad para continuar en el laberinto.");
   };
 
   const nextLevelXp = Math.pow(progress.level, 2) * 200;
@@ -410,12 +409,12 @@ export default function LabyrinthPage() {
                   <p className="text-slate-500 text-xs mb-6">Te has quedado sin tiempo o chocaste contra un centinela.</p>
 
                   <div className="flex flex-row gap-4 justify-center">
-                    {revivesUsed === 0 && (
+                    {revivesUsed < 5 && (
                       <button
                         onClick={watchAdToRevive}
                         className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider italic transition-all hover:scale-105 flex items-center gap-2"
                       >
-                        <Play className="w-4 h-4 fill-current" /> Revivir
+                        <Play className="w-4 h-4 fill-current" /> Revivir ({5 - revivesUsed} restantes)
                       </button>
                     )}
                     <button
@@ -441,6 +440,8 @@ export default function LabyrinthPage() {
                   onBoosterUsed={() => setActiveBooster(null)}
                   triggerRestart={triggerRestart}
                   onRestartComplete={() => setTriggerRestart(false)}
+                  triggerRevive={triggerRevive}
+                  onReviveComplete={() => setTriggerRevive(false)}
                 />
               )}
             </div>

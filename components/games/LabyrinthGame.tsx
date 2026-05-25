@@ -12,6 +12,8 @@ interface LabyrinthGameProps {
   onBoosterUsed: () => void;
   triggerRestart: boolean;
   onRestartComplete: () => void;
+  triggerRevive: boolean;
+  onReviveComplete: () => void;
 }
 
 export default function LabyrinthGame({
@@ -21,7 +23,9 @@ export default function LabyrinthGame({
   activeBooster,
   onBoosterUsed,
   triggerRestart,
-  onRestartComplete
+  onRestartComplete,
+  triggerRevive,
+  onReviveComplete
 }: LabyrinthGameProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<any>(null);
@@ -64,6 +68,11 @@ export default function LabyrinthGame({
         mapRevealed = false;
         enemiesFrozen = false;
         hintActive = false;
+
+        // Propiedades de revivir y daño
+        killingEnemy: any = null;
+        isInvulnerable = false;
+        invulnTimer: Phaser.Time.TimerEvent | null = null;
 
         // Overlay de oscuridad
         darknessRT: Phaser.GameObjects.RenderTexture | null = null;
@@ -626,8 +635,11 @@ export default function LabyrinthGame({
         }
 
         handleEnemyCollision(p: any, enemy: any) {
-          // Si colisiona, pierde
+          // Si colisiona y es invulnerable o ya escapó, ignorar
+          if (this.isEscaped || this.isInvulnerable) return;
+
           this.isEscaped = true;
+          this.killingEnemy = enemy;
           if (this.timerEvent) this.timerEvent.destroy();
           soundSynth.playExplosion();
 
@@ -647,7 +659,9 @@ export default function LabyrinthGame({
         }
 
         handleTimeOut() {
+          if (this.isEscaped) return;
           this.isEscaped = true;
+          this.killingEnemy = null;
           if (this.timerEvent) this.timerEvent.destroy();
           soundSynth.playExplosion();
 
@@ -661,6 +675,44 @@ export default function LabyrinthGame({
               levelsCompleted: 0
             });
           });
+        }
+
+        revivePlayerInPlace() {
+          if (!this.player) return;
+
+          // 1. Eliminar el enemigo que causó la muerte si aplica
+          if (this.killingEnemy) {
+            this.spawnImpactParticles(this.killingEnemy.x, this.killingEnemy.y, 0xa855f7, 20);
+            this.killingEnemy.destroy();
+            this.killingEnemy = null;
+          }
+
+          // 2. Restaurar tint y físicas
+          this.player.clearTint();
+          this.isEscaped = false;
+          this.physics.resume();
+
+          // 3. Dar 20 segundos extras y reiniciar el timer
+          this.timeLeft += 20;
+          if (this.timerEvent) this.timerEvent.destroy();
+          this.timerEvent = this.time.addEvent({
+            delay: 1000,
+            callback: this.tickTimer,
+            callbackScope: this,
+            loop: true
+          });
+
+          // 4. Activar invulnerabilidad por 3 segundos (parpadeo visual)
+          this.isInvulnerable = true;
+          this.player.setAlpha(0.5);
+
+          if (this.invulnTimer) this.invulnTimer.destroy();
+          this.invulnTimer = this.time.delayedCall(3000, () => {
+            this.isInvulnerable = false;
+            if (this.player) this.player.setAlpha(1);
+          });
+
+          this.showFloatingText(this.player.x, this.player.y - 30, "¡REVIVIDO!", 0x00ff88);
         }
 
         useMapBooster() {
@@ -893,6 +945,17 @@ export default function LabyrinthGame({
       }
     }
   }, [triggerRestart]);
+
+  // Revivir juego in-place
+  useEffect(() => {
+    if (triggerRevive && gameRef.current) {
+      const activeScene = gameRef.current.scene.keys.LabyrinthScene;
+      if (activeScene) {
+        activeScene.revivePlayerInPlace();
+        onReviveComplete();
+      }
+    }
+  }, [triggerRevive]);
 
   return (
     <div className="relative w-full h-full flex flex-col items-center">
