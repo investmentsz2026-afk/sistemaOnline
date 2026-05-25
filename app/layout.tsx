@@ -39,9 +39,11 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             {/* Monetag Vignette Banner Global */}
-            <Script id="monetag-vignette" strategy="afterInteractive">
-              {`(function(s){s.dataset.zone='11056724',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`}
-            </Script>
+            <Script 
+              src="https://n6wxm.com/vignette.min.js" 
+              data-zone="11056724" 
+              strategy="afterInteractive" 
+            />
             
             <div className="flex-1 flex flex-col relative min-h-screen">
               {children}
