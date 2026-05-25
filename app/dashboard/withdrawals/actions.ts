@@ -29,6 +29,31 @@ export async function updateWithdrawalStatus(
       }
     });
 
+    // Si el retiro es aprobado y es de al menos $5.00, y el usuario fue referido por alguien:
+    if (status === "COMPLETED" && withdrawal.amount >= 5.0 && withdrawal.user.referredById) {
+      const referrerId = withdrawal.user.referredById;
+      await prisma.user.update({
+        where: { id: referrerId },
+        data: { balance: { increment: 0.50 } }
+      });
+      await prisma.auditLog.create({
+        data: {
+          userId: referrerId,
+          action: "REFERRAL_BONUS_RECEIVED",
+          description: `Bono de referido recibido: $0.50 USD por el retiro exitoso de su referido ${withdrawal.user.name || withdrawal.user.email}`
+        }
+      });
+      await prisma.notification.create({
+        data: {
+          userId: referrerId,
+          type: "REFERRAL_BONUS",
+          title: "¡Bono de Referido Acreditado!",
+          message: `Has ganado $0.50 USD porque tu referido ${withdrawal.user.name || withdrawal.user.email} completó un retiro de al menos $5.00 USD.`,
+          link: "/retiro"
+        }
+      });
+    }
+
     revalidatePath("/dashboard/withdrawals");
     return { success: true };
   } catch (error) {

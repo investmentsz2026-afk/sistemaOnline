@@ -23,10 +23,16 @@ import {
   Share2 as Facebook,
   ExternalLink,
   UserPlus,
-  Gamepad2
+  Gamepad2,
+  Gem,
+  Award,
+  ChevronRight,
+  TrendingUp
 } from "lucide-react";
 import { completeSocialMission } from "./actions";
 import { sendFriendRequest } from "@/app/mensajes/actions";
+import { claimLevelReward } from "@/app/games/actions";
+import { LEVEL_REWARDS } from "@/app/games/constants";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
@@ -47,30 +53,46 @@ interface RewardsClientProps {
   currentPlayerId: string;
   userRole: string;
   completedMissions: string[];
+  userLevel?: number;
+  userXp?: number;
+  userGems?: number;
+  referralCode?: string;
+  claimedLevelRewards?: string;
+  referralsCount?: number;
 }
 
-export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole, completedMissions }: RewardsClientProps) => {
-  const [activeTab, setActiveTab] = useState<"misiones" | "bonos" | "referidos" | "adgem" | null>(null);
+export const RewardsClient = ({ 
+  users, 
+  currentUserId, 
+  currentPlayerId, 
+  userRole, 
+  completedMissions,
+  userLevel = 1,
+  userXp = 0,
+  userGems = 0,
+  referralCode = "",
+  claimedLevelRewards = "",
+  referralsCount = 0
+}: RewardsClientProps) => {
+  const [activeTab, setActiveTab] = useState<"misiones" | "adgem" | "level_rewards" | "referidos" | "bonos" | null>(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, mins: 0, secs: 0 });
   const [copied, setCopied] = useState(false);
   const searchParams = useSearchParams();
   const [loadingMission, setLoadingMission] = useState<string | null>(null);
+  const [claimingLevel, setClaimingLevel] = useState<number | null>(null);
+  const [claimedLevels, setClaimedLevels] = useState<string[]>(
+    claimedLevelRewards ? claimedLevelRewards.split(",").map(c => c.trim()) : []
+  );
 
   const isAdminOrMod = userRole === "ADMIN" || userRole === "MODERATOR";
 
-  // Función para calcular el tiempo restante global (Ciclos de 15 días)
+  // Calcular tiempo restante de la temporada
   const calculateGlobalTimeLeft = () => {
-    // Fecha de referencia: El inicio de este ciclo (Domingo 3 de Mayo de 2026 a las 23:59:59 PET)
     const referenceDate = new Date("2026-05-03T23:59:59-05:00").getTime();
     const now = new Date().getTime();
-    
     const cycleMs = 15 * 24 * 60 * 60 * 1000; 
     let msSinceReference = now - referenceDate;
-    
-    // Si por alguna razón la fecha actual es anterior a la referencia, 
-    // nos aseguramos de que no de números negativos extraños
     if (msSinceReference < 0) msSinceReference = 0;
-
     const msIntoCurrentCycle = msSinceReference % cycleMs;
     const msRemaining = cycleMs - msIntoCurrentCycle;
     
@@ -102,6 +124,23 @@ export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole,
     setLoadingMission(null);
   };
 
+  const handleClaimLevel = async (lvl: number) => {
+    setClaimingLevel(lvl);
+    try {
+      const res = await claimLevelReward(lvl);
+      if (res.success) {
+        toast.success(`¡Bono reclamado! +$${res.rewardAmount?.toFixed(2)} acreditados a tu balance.`);
+        setClaimedLevels(prev => [...prev, lvl.toString()]);
+      } else {
+        toast.error(res.error || "No se pudo reclamar.");
+      }
+    } catch (e) {
+      toast.error("Error de conexión.");
+    } finally {
+      setClaimingLevel(null);
+    }
+  };
+
   const handleAddFriend = async (playerId: string) => {
     if (!playerId) {
       toast.error("Este jugador no tiene un ID de batalla válido.");
@@ -116,8 +155,9 @@ export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole,
     setActiveTab(null);
   }, [searchParams]);
 
+  // Generar link con referralCode en lugar de ID
   const referralLink = typeof window !== "undefined" 
-    ? `${window.location.origin}/register?ref=${currentUserId}` 
+    ? `${window.location.origin}/register?ref=${referralCode || currentPlayerId}` 
     : "";
 
   const misionesList = [
@@ -164,18 +204,12 @@ export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole,
   const copyToClipboard = () => {
     navigator.clipboard.writeText(referralLink);
     setCopied(true);
-    toast.success("¡Link de referido copiado!");
+    toast.success("¡Enlace de referido copiado!");
     setTimeout(() => setCopied(false), 2000);
   };
 
   const podium = [users[1], users[0], users[2]].filter(Boolean);
   const restOfUsers = users.slice(3);
-
-  const mockReferrals = [
-    { name: "Juan***", date: "01/05/2026", status: "PENDIENTE", detail: "Esperando primer retiro" },
-    { name: "Maria***", date: "28/04/2026", status: "COMPLETADO", detail: "¡$1.00 ganado!" },
-    { name: "Pedro***", date: "25/04/2026", status: "PENDIENTE", detail: "Usuario registrado" },
-  ];
 
   const PlayerAvatar = ({ user, size = "md", color = "cyan" }: { user: LeaderboardUser, size?: "sm" | "md" | "lg", color?: string }) => {
     const initials = user.name?.substring(0, 2).toUpperCase() || "??";
@@ -198,22 +232,30 @@ export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole,
     );
   };
 
+  // Calcular la XP requerida para el nivel actual
+  const nextLevelXp = Math.pow(userLevel, 2) * 500;
+  const currentLevelXp = Math.pow(userLevel - 1, 2) * 500;
+  const xpInCurrentLevel = userXp - currentLevelXp;
+  const xpNeededForNext = nextLevelXp - currentLevelXp;
+  const xpPercent = Math.min(100, Math.max(0, (xpInCurrentLevel / xpNeededForNext) * 100));
+
   return (
     <div className="space-y-4 md:space-y-6 pb-32">
       {!isAdminOrMod && (
-        <div className="sticky top-0 z-40 bg-[#050a1f]/80 backdrop-blur-xl border-b border-white/5">
-          <div className="flex items-center justify-around max-w-2xl mx-auto h-16 md:h-20">
+        <div className="sticky top-0 z-40 bg-[#050a1f]/85 backdrop-blur-xl border-b border-white/5 overflow-x-auto scrollbar-none">
+          <div className="flex items-center justify-start md:justify-around max-w-4xl mx-auto h-16 md:h-20 px-4 gap-2 whitespace-nowrap">
             {[
               { id: "misiones", label: "Misiones" },
               { id: "adgem", label: "Gana Monedas" },
-              { id: "bonos", label: "Bonos" },
-              { id: "referidos", label: "Invita a Amigos" },
+              { id: "level_rewards", label: "Premios por Nivel" },
+              { id: "referidos", label: "Invitar Amigos" },
+              { id: "bonos", label: "Bonos Especiales" },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(activeTab === tab.id ? null : tab.id as any)}
                 className={cn(
-                  "relative h-full px-4 flex items-center justify-center text-[10px] md:text-xs font-black uppercase tracking-widest transition-colors",
+                  "relative h-full px-4 flex items-center justify-center text-[10px] md:text-xs font-black uppercase tracking-widest transition-colors flex-shrink-0",
                   activeTab === tab.id ? "text-emerald-400" : "text-slate-500 hover:text-slate-300"
                 )}
               >
@@ -231,6 +273,47 @@ export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole,
         <AnimatePresence mode="wait">
           {!activeTab ? (
             <motion.div key="ranking-view" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-12 mt-4">
+              
+              {/* Box de Bienvenida RPG */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-[#0b0e14]/60 border border-white/10 p-6 rounded-3xl backdrop-blur-md">
+                <div className="md:col-span-2 flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex flex-col items-center justify-center font-black text-cyan-400 italic">
+                    <span className="text-[10px] not-italic text-slate-500">NIVEL</span>
+                    <span className="text-2xl leading-none">{userLevel}</span>
+                  </div>
+                  <div className="flex-1 space-y-1.5">
+                    <div className="flex justify-between text-[10px] font-black tracking-wider text-slate-400">
+                      <span>RANGO GLOBAL BATTLECOINS</span>
+                      <span className="text-cyan-400">{userXp} / {nextLevelXp} XP</span>
+                    </div>
+                    <div className="h-3 w-full bg-slate-950 rounded-full border border-white/5 overflow-hidden">
+                      <div className="h-full bg-cyan-400 shadow-[0_0_12px_#06b6d4]" style={{ width: `${xpPercent}%` }} />
+                    </div>
+                    <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">
+                      ¡Llega al nivel 10 para reclamar tu primer premio de dinero real!
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-around border-t md:border-t-0 md:border-l border-white/5 pt-4 md:pt-0 pl-0 md:pl-6">
+                  <div className="flex items-center gap-2">
+                    <Gem className="w-5 h-5 text-purple-400" />
+                    <div>
+                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block">Gemas RPG</span>
+                      <span className="text-base font-black text-purple-400">{userGems}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-emerald-400" />
+                    <div>
+                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block">Retiros Invitados</span>
+                      <span className="text-base font-black text-emerald-400">{referralsCount}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Leaderboard/Podium */}
               <div className="flex flex-col gap-6">
                 <div className="relative overflow-hidden bg-[#0b0e14] border border-white/10 rounded-[3rem] p-8 md:p-10 shadow-2xl">
                   <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none"><Trophy className="w-48 h-48 text-white" /></div>
@@ -259,6 +342,7 @@ export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole,
                     </div>
                   </div>
                 </div>
+                
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
                     { label: "1º Puesto", prize: "100.00", color: "text-yellow-400", bg: "bg-yellow-500/5" },
@@ -274,6 +358,7 @@ export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole,
                 </div>
               </div>
 
+              {/* Podium display */}
               <div className="flex items-end justify-center w-full gap-3 md:gap-8 pt-10 px-2 max-w-3xl mx-auto">
                 {users[1] && (
                   <div className="flex-1 flex flex-col items-center group">
@@ -282,7 +367,7 @@ export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole,
                       <div className="absolute -top-2 -right-2 bg-slate-400 text-slate-950 w-7 h-7 rounded-full flex items-center justify-center font-black text-xs shadow-lg">2</div>
                     </div>
                     <div className="w-full h-32 md:h-48 bg-gradient-to-t from-slate-500/40 via-slate-500/10 to-transparent rounded-t-[2.5rem] border-x border-t border-slate-500/30 flex flex-col items-center justify-center p-4">
-                      <div className="text-slate-300 font-black text-[10px] md:text-sm uppercase mb-2">+$50.00</div>
+                      <div className="text-slate-300 font-black text-[10px] md:text-sm uppercase mb-2 font-black italic">+$50.00</div>
                       <span className="text-white font-black uppercase text-[9px] md:text-sm truncate w-full text-center mb-1">{users[1].name}</span>
                       <span className="text-slate-400 font-bold text-[8px] md:text-xs">{users[1].points} pts</span>
                     </div>
@@ -291,12 +376,12 @@ export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole,
                 {users[0] && (
                   <div className="flex-[1.2] flex flex-col items-center z-10 group">
                     <div className="relative mb-6 group-hover:scale-110 transition-transform duration-500">
-                      <Crown className="absolute -top-12 left-1/2 -translate-x-1/2 w-10 h-10 text-yellow-400" />
+                      <Crown className="absolute -top-12 left-1/2 -translate-x-1/2 w-10 h-10 text-yellow-400 animate-pulse" />
                       <PlayerAvatar user={users[0]} size="lg" color="gold" />
                       <div className="absolute -top-1 -right-1 bg-yellow-500 text-yellow-950 w-9 h-9 rounded-full flex items-center justify-center font-black text-sm shadow-xl border-4 border-[#050a1f]">1</div>
                     </div>
                     <div className="w-full h-48 md:h-72 bg-gradient-to-t from-yellow-500/50 via-yellow-500/20 to-transparent rounded-t-[3rem] border-x border-t border-yellow-500/40 flex flex-col items-center justify-center p-6 shadow-[0_-30px_60px_rgba(234,179,8,0.2)]">
-                      <div className="text-yellow-400 font-black text-xs md:text-xl uppercase mb-4 animate-pulse">+$100.00</div>
+                      <div className="text-yellow-400 font-black text-xs md:text-xl uppercase mb-4 animate-pulse italic font-black">+$100.00</div>
                       <span className="text-white font-black uppercase text-[10px] md:text-2xl truncate w-full text-center mb-2">{users[0].name}</span>
                       <span className="text-yellow-100 font-bold text-[10px] md:text-base">{users[0].points} pts</span>
                     </div>
@@ -309,7 +394,7 @@ export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole,
                       <div className="absolute -top-2 -right-2 bg-amber-700 text-white w-7 h-7 rounded-full flex items-center justify-center font-black text-xs shadow-lg">3</div>
                     </div>
                     <div className="w-full h-24 md:h-36 bg-gradient-to-t from-amber-700/40 via-amber-700/10 to-transparent rounded-t-[2.5rem] border-x border-t border-amber-800/30 flex flex-col items-center justify-center p-4">
-                      <div className="text-amber-500 font-black text-[8px] md:text-xs uppercase mb-1">+$25.00</div>
+                      <div className="text-amber-500 font-black text-[8px] md:text-xs uppercase mb-1 font-black italic text-center">+$25.00</div>
                       <span className="text-white font-black uppercase text-[9px] md:text-xs truncate w-full text-center mb-1">{users[2].name}</span>
                       <span className="text-amber-800 font-bold text-[7px] md:text-[10px]">{users[2].points} pts</span>
                     </div>
@@ -340,15 +425,103 @@ export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole,
             </motion.div>
           ) : (
             <motion.div key="active-tab-view" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} className="mt-6 space-y-6">
+              
+              {/* TAB PREMIOS POR NIVEL */}
+              {activeTab === "level_rewards" && (
+                <div className="space-y-6">
+                  <div className="bg-gradient-to-br from-cyan-600 via-blue-700 to-indigo-800 rounded-3xl p-8 relative overflow-hidden shadow-2xl border border-white/10">
+                    <div className="relative z-10 space-y-4">
+                      <h2 className="text-3xl md:text-4xl font-black text-white leading-tight uppercase italic">
+                        Premios por <span className="text-cyan-400">Nivel RPG</span>
+                      </h2>
+                      <p className="text-white/80 text-xs font-bold uppercase tracking-widest max-w-lg leading-relaxed">
+                        Sube de nivel general jugando cualquiera de nuestros 5 juegos AAA. ¡Alcanza la meta y desbloquea dinero directo a tu balance!
+                      </p>
+                    </div>
+                    <Award className="absolute -right-4 -bottom-4 w-40 h-40 text-white/10 rotate-12" />
+                  </div>
+
+                  <div className="space-y-4">
+                    {Object.entries(LEVEL_REWARDS).map(([lvlStr, reward]) => {
+                      const lvl = parseInt(lvlStr);
+                      const isReached = userLevel >= lvl;
+                      const isClaimed = claimedLevels.includes(lvlStr);
+                      
+                      return (
+                        <div 
+                          key={lvl}
+                          className={cn(
+                            "bg-[#0b0e14] border p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 transition-all",
+                            isClaimed 
+                              ? "border-slate-800 opacity-60 bg-[#0b0e14]/40" 
+                              : isReached 
+                                ? "border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.1)] bg-cyan-950/5" 
+                                : "border-white/5"
+                          )}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={cn(
+                              "w-12 h-12 rounded-xl flex flex-col items-center justify-center font-black",
+                              isReached ? "bg-cyan-500 text-slate-950" : "bg-slate-950 border border-white/5 text-slate-500"
+                            )}>
+                              <span className="text-[8px] font-bold leading-none mb-0.5">LVL</span>
+                              <span className="text-lg leading-none">{lvl}</span>
+                            </div>
+                            <div className="text-center sm:text-left">
+                              <h4 className="text-sm font-black text-white uppercase">Recompensa de Nivel {lvl}</h4>
+                              <p className="text-xs text-slate-500 font-medium">
+                                {isReached 
+                                  ? "¡Meta alcanzada! Reclama tu efectivo." 
+                                  : `Faltan ${lvl - userLevel} niveles para desbloquear.`}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+                            <span className="text-xl font-black text-emerald-400 italic tabular-nums">
+                              +${reward.toFixed(2)} USD
+                            </span>
+
+                            {isClaimed ? (
+                              <span className="text-[9px] font-black uppercase text-slate-600 bg-slate-950/50 border border-white/5 px-4 py-2 rounded-xl flex items-center gap-1.5">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-slate-600" /> Reclamado
+                              </span>
+                            ) : isReached ? (
+                              <button
+                                onClick={() => handleClaimLevel(lvl)}
+                                disabled={claimingLevel !== null}
+                                className="bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-black text-[10px] uppercase tracking-widest px-5 py-2.5 rounded-xl hover:scale-105 transition-all shadow-[0_0_15px_rgba(234,179,8,0.3)]"
+                              >
+                                {claimingLevel === lvl ? "Procesando..." : "Reclamar"}
+                              </button>
+                            ) : (
+                              <span className="text-[9px] font-black uppercase text-slate-600 bg-slate-950 border border-white/5 px-4 py-2 rounded-xl">
+                                Bloqueado
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB INVITAR AMIGOS */}
               {activeTab === "referidos" && (
                 <div className="space-y-6">
                   <div className="bg-gradient-to-br from-indigo-600 to-purple-800 rounded-3xl p-8 relative overflow-hidden shadow-2xl border border-white/10">
                     <div className="relative z-10 space-y-4">
-                      <h2 className="text-3xl md:text-4xl font-black text-white leading-tight uppercase italic">¡Gana <span className="text-emerald-400">$1.00 USD</span> <br /> por amigo invitado!</h2>
-                      <p className="text-white/70 text-xs font-bold uppercase tracking-widest max-w-[200px]">El premio se acredita cuando tu amigo haga su primer retiro.</p>
+                      <h2 className="text-3xl md:text-4xl font-black text-white leading-tight uppercase italic">
+                        ¡Gana <span className="text-emerald-400">$0.50 USD</span> <br /> por cada invitado!
+                      </h2>
+                      <p className="text-white/70 text-xs font-bold uppercase tracking-widest max-w-[280px]">
+                        El bono se acredita automáticamente en cuanto tu referido complete su primer retiro de $5.00+ USD.
+                      </p>
                     </div>
                     <Gift className="absolute -right-4 -bottom-4 w-40 h-40 text-white/10 rotate-12" />
                   </div>
+
                   <div className="space-y-3">
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Tu Enlace de Referido Personal</p>
                     <div className="bg-[#1a1c26] border border-white/10 rounded-2xl p-2 flex items-center justify-between gap-4 shadow-inner">
@@ -359,38 +532,39 @@ export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole,
                       </button>
                     </div>
                   </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-[#0b0e14] border border-white/5 rounded-2xl p-6">
-                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Ganado</p>
-                      <p className="text-3xl font-black text-white italic tracking-tighter">$1.00</p>
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Tus Referidos Totales</p>
+                      <p className="text-3xl font-black text-white italic tracking-tighter tabular-nums">{referralsCount}</p>
                     </div>
                     <div className="bg-[#0b0e14] border border-white/5 rounded-2xl p-6">
-                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Pendiente</p>
-                      <p className="text-3xl font-black text-yellow-500 italic tracking-tighter">$2.00</p>
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Premio por Invitación</p>
+                      <p className="text-3xl font-black text-emerald-400 italic tracking-tighter">$0.50 USD</p>
                     </div>
                   </div>
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-black text-white uppercase tracking-[0.2em] ml-2 flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-slate-500" /> Historial de Invitados</h3>
-                    <div className="space-y-2">
-                      {mockReferrals.map((ref, i) => (
-                        <div key={i} className="bg-white/5 border border-white/5 rounded-2xl p-4 flex items-center justify-between group hover:bg-white/[0.08] transition-all">
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center font-black text-white text-xs">{ref.name[0]}</div>
-                            <div>
-                              <p className="text-sm font-black text-white uppercase">{ref.name}</p>
-                              <p className="text-[9px] font-bold text-slate-500 italic">Unido el {ref.date}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className={cn("text-[9px] font-black px-3 py-1 rounded-full border mb-1 inline-block", ref.status === "COMPLETADO" ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20")}>{ref.status}</div>
-                            <p className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">{ref.detail}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+
+                  <div className="bg-[#0b0e14] border border-white/5 rounded-2xl p-6 space-y-4">
+                    <h3 className="text-sm font-black text-white uppercase flex items-center gap-2">
+                      <Info className="w-4 h-4 text-cyan-400" />
+                      ¿Cómo funciona el sistema de referidos?
+                    </h3>
+                    <ul className="space-y-3 text-xs text-slate-400 font-medium">
+                      <li className="flex gap-2">
+                        <span className="text-cyan-400 font-bold">1.</span> Comparte tu enlace o código único (<span className="text-cyan-400 font-bold">{referralCode}</span>) con tus amigos.
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-cyan-400 font-bold">2.</span> Tus amigos se registran y reciben un **bono de bienvenida instantáneo de $0.02 USD**.
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-cyan-400 font-bold">3.</span> Juegan, recolectan puntos y retiran. Cuando su retiro sea aprobado por el administrador, **recibirás $0.50 USD** en tu balance directamente.
+                      </li>
+                    </ul>
                   </div>
                 </div>
               )}
+
+              {/* TAB BONOS */}
               {activeTab === "bonos" && (
                 <div className="space-y-6">
                   <div className="bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-700 rounded-3xl p-8 relative overflow-hidden shadow-2xl border border-white/10 group">
@@ -403,7 +577,7 @@ export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole,
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {[
                       { title: "Bono de Racha Semanal", desc: "Extra por jugar 7 días seguidos", amount: "+$5.00 USD", status: "DISPONIBLE", color: "yellow" },
-                      { title: "Bono de Registro", desc: "Regalo por crear tu cuenta", amount: "+500 coins", status: "RECLAMADO", color: "emerald" },
+                      { title: "Bono de Registro", desc: "Regalo por crear tu cuenta", amount: "+$0.02 USD", status: "RECLAMADO", color: "emerald" },
                     ].map((bono, i) => (
                       <div key={i} className="bg-[#0b0e14] border border-white/5 rounded-2xl p-6 flex flex-col justify-between gap-6">
                         <div className="flex justify-between items-start">
@@ -416,6 +590,8 @@ export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole,
                   </div>
                 </div>
               )}
+
+              {/* TAB MISIONES */}
               {activeTab === "misiones" && (
                 <div className="space-y-6">
                   <div className="bg-[#0b0e14] border border-white/10 rounded-3xl p-10 relative overflow-hidden">
@@ -450,6 +626,8 @@ export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole,
                   </div>
                 </div>
               )}
+
+              {/* TAB ADGEM */}
               {activeTab === "adgem" && (
                 <div className="space-y-6">
                   <div className="bg-gradient-to-br from-indigo-900 via-blue-900 to-cyan-900 rounded-3xl p-8 md:p-12 relative overflow-hidden border border-cyan-500/30 shadow-[0_0_50px_rgba(6,182,212,0.2)] group">
@@ -468,7 +646,6 @@ export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole,
                         Instala juegos, llega a niveles específicos y recibe recompensas automáticas en tu balance de batalla.
                       </p>
                       
-                      {/* BOTÓN CON ID DE JUGADOR DINÁMICO */}
                       <a 
                         href={`https://api.adgem.com/v1/wall?appid=TU_APP_ID&playerid=${currentPlayerId.replace("#", "")}`}
                         target="_blank"
@@ -495,6 +672,7 @@ export const RewardsClient = ({ users, currentUserId, currentPlayerId, userRole,
                   </div>
                 </div>
               )}
+
               <button onClick={() => setActiveTab(null)} className="w-full py-4 text-slate-500 hover:text-white text-[10px] font-black uppercase tracking-[0.3em] transition-colors pt-10">Volver al Ranking Principal</button>
             </motion.div>
           )}

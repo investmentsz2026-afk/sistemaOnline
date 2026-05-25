@@ -26,6 +26,27 @@ export class AuthService {
       if (!existing) isUnique = true;
     }
 
+    // Generar un código de referido único
+    let referralCode = "";
+    let isRefUnique = false;
+    while (!isRefUnique) {
+      const randomPart = Math.random().toString(36).substring(2, 7).toUpperCase();
+      referralCode = `REF-${randomPart}`;
+      const existingRef = await prisma.user.findUnique({ where: { referralCode } });
+      if (!existingRef) isRefUnique = true;
+    }
+
+    // Buscar patrocinador por código de referido
+    let referredById: string | undefined = undefined;
+    if (data.referralCode) {
+      const referrer = await prisma.user.findUnique({
+        where: { referralCode: data.referralCode.trim().toUpperCase() }
+      });
+      if (referrer) {
+        referredById = referrer.id;
+      }
+    }
+
     const user = await prisma.user.create({
       data: {
         name,
@@ -35,13 +56,16 @@ export class AuthService {
         phoneNumber,
         company,
         playerId,
+        referralCode,
+        referredById,
+        balance: 0.02, // Bono de registro
       },
     });
 
     await AuditService.log(
       user.id,
       "USER_REGISTERED",
-      `Usuario ${user.email} se registr con el rol ${user.role}`
+      `Usuario ${user.email} se registró con el rol ${user.role} (Bono de $0.02 acreditado). Código de referido: ${referralCode}`
     );
 
     return user;

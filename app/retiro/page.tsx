@@ -13,10 +13,19 @@ export default async function RetiroPage() {
     redirect("/login");
   }
 
-  // Fetch real balance
+  // Fetch real balance and referral data
   const dbUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { balance: true, name: true }
+    select: { 
+      balance: true, 
+      name: true, 
+      referralCode: true,
+      playerId: true
+    }
+  });
+
+  const referralsCount = await prisma.user.count({
+    where: { referredById: session.user.id }
   });
 
   const balance = dbUser?.balance || 0;
@@ -72,8 +81,13 @@ export default async function RetiroPage() {
           </div>
         </section>
 
-        {/* Financial Operations Tabs (Recharge / Withdraw) */}
-        <BilleteraTabs balance={balance} />
+        {/* Financial Operations Tabs (Recharge / Withdraw / Referrals) */}
+        <BilleteraTabs 
+          balance={balance} 
+          referralCode={dbUser?.referralCode || ""}
+          referralsCount={referralsCount}
+          playerId={dbUser?.playerId || ""}
+        />
       </div>
 
     </main>

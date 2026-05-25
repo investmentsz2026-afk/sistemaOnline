@@ -85,30 +85,30 @@ export default async function JuegosPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 md:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
             {/* Tarjeta Runner */}
-            <div className="group relative bg-slate-900/40 backdrop-blur-md border border-white/5 p-3 md:p-6 rounded-[1.5rem] md:rounded-[2.5rem] hover:border-cyan-500/20 transition-all flex flex-col sm:flex-row gap-3 md:gap-6 shadow-xl hover:shadow-cyan-500/2">
+            <div className="group relative bg-slate-900/40 backdrop-blur-md border border-white/5 p-4 rounded-[2rem] hover:border-cyan-500/20 transition-all flex flex-col gap-4 shadow-xl hover:shadow-cyan-500/2">
               <div className="absolute top-0 right-12 w-16 h-[1.5px] bg-cyan-500/30"></div>
-              <div className="relative aspect-[2/1] sm:aspect-square w-full sm:w-36 rounded-2xl md:rounded-3xl overflow-hidden bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 flex flex-col items-center justify-center text-slate-950 font-black shadow-lg">
-                <span className="text-[8px] sm:text-xs uppercase tracking-widest text-slate-950/80 font-black mb-0.5 sm:mb-1">CYBER</span>
-                <span className="text-lg sm:text-3xl italic tracking-tighter uppercase font-black">RUN</span>
+              <div className="relative aspect-[2/1] w-full rounded-2xl overflow-hidden bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 flex flex-col items-center justify-center text-slate-950 font-black shadow-lg">
+                <span className="text-[10px] uppercase tracking-widest text-slate-950/80 font-black mb-1">CYBER</span>
+                <span className="text-2xl italic tracking-tighter uppercase font-black">RUNNER</span>
               </div>
               
-              <div className="flex-1 flex flex-col justify-between space-y-2 md:space-y-4">
-                <div className="space-y-1 md:space-y-2">
-                  <span className="text-[6px] md:text-[8px] bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 px-1.5 py-0.5 md:px-2.5 md:py-1 rounded-full font-black uppercase tracking-widest inline-block">
+              <div className="flex-1 flex flex-col justify-between space-y-3">
+                <div className="space-y-1.5">
+                  <span className="text-[8px] bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 px-2 py-0.5 rounded-full font-black uppercase tracking-widest inline-block">
                     Endless Runner
                   </span>
-                  <h3 className="text-xs sm:text-lg font-black text-white italic uppercase tracking-tighter group-hover:text-cyan-400 transition-colors">
+                  <h3 className="text-base font-black text-white italic uppercase tracking-tighter group-hover:text-cyan-400 transition-colors">
                     Cyber Runner
                   </h3>
-                  <p className="text-slate-400 text-xs leading-relaxed hidden sm:block">
+                  <p className="text-slate-400 text-xs leading-relaxed">
                     Esquiva obstáculos a máxima velocidad, activa escudos, imanes de monedas y jetpacks para batir récords globales.
                   </p>
                 </div>
                 <Link 
                   href="/games/runner"
-                  className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-[9px] sm:text-xs px-3 py-2 md:px-6 md:py-3 rounded-xl md:rounded-2xl uppercase tracking-wider italic transition-all hover:scale-105 text-center shadow-[0_0_20px_rgba(6,182,212,0.3)] block"
+                  className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl uppercase tracking-wider italic transition-all hover:scale-105 text-center shadow-[0_0_20px_rgba(6,182,212,0.3)] block"
                 >
                   Jugar Ahora
                 </Link>
@@ -116,28 +116,115 @@ export default async function JuegosPage() {
             </div>
 
             {/* Tarjeta Puzzle */}
-            <div className="group relative bg-slate-900/40 backdrop-blur-md border border-white/5 p-3 md:p-6 rounded-[1.5rem] md:rounded-[2.5rem] hover:border-emerald-500/20 transition-all flex flex-col sm:flex-row gap-3 md:gap-6 shadow-xl hover:shadow-emerald-500/2">
+            <div className="group relative bg-slate-900/40 backdrop-blur-md border border-white/5 p-4 rounded-[2rem] hover:border-emerald-500/20 transition-all flex flex-col gap-4 shadow-xl hover:shadow-emerald-500/2">
               <div className="absolute top-0 right-12 w-16 h-[1.5px] bg-emerald-500/30"></div>
-              <div className="relative aspect-[2/1] sm:aspect-square w-full sm:w-36 rounded-2xl md:rounded-3xl overflow-hidden bg-gradient-to-br from-emerald-400 via-teal-500 to-emerald-600 flex flex-col items-center justify-center text-slate-950 font-black shadow-lg">
-                <span className="text-[8px] sm:text-xs uppercase tracking-widest text-slate-950/80 font-black mb-0.5 sm:mb-1">CANDY</span>
-                <span className="text-lg sm:text-3xl italic tracking-tighter uppercase font-black">GEM</span>
+              <div className="relative aspect-[2/1] w-full rounded-2xl overflow-hidden bg-gradient-to-br from-emerald-400 via-teal-500 to-emerald-600 flex flex-col items-center justify-center text-slate-950 font-black shadow-lg">
+                <span className="text-[10px] uppercase tracking-widest text-slate-950/80 font-black mb-1">CANDY</span>
+                <span className="text-2xl italic tracking-tighter uppercase font-black">GEM</span>
               </div>
               
-              <div className="flex-1 flex flex-col justify-between space-y-2 md:space-y-4">
-                <div className="space-y-1 md:space-y-2">
-                  <span className="text-[6px] md:text-[8px] bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 px-1.5 py-0.5 md:px-2.5 md:py-1 rounded-full font-black uppercase tracking-widest inline-block">
+              <div className="flex-1 flex flex-col justify-between space-y-3">
+                <div className="space-y-1.5">
+                  <span className="text-[8px] bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 px-2 py-0.5 rounded-full font-black uppercase tracking-widest inline-block">
                     Match-3 Saga
                   </span>
-                  <h3 className="text-xs sm:text-lg font-black text-white italic uppercase tracking-tighter group-hover:text-emerald-400 transition-colors">
+                  <h3 className="text-base font-black text-white italic uppercase tracking-tighter group-hover:text-emerald-400 transition-colors">
                     Match-3 Puzzle
                   </h3>
-                  <p className="text-slate-400 text-xs leading-relaxed hidden sm:block">
+                  <p className="text-slate-400 text-xs leading-relaxed">
                     Supera más de 100 niveles desafiantes. Consigue combos masivos y compra boosters especiales para estallar el tablero.
                   </p>
                 </div>
                 <Link 
                   href="/games/puzzle"
-                  className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-[9px] sm:text-xs px-3 py-2 md:px-6 md:py-3 rounded-xl md:rounded-2xl uppercase tracking-wider italic transition-all hover:scale-105 text-center shadow-[0_0_20px_rgba(16,185,129,0.3)] block"
+                  className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl uppercase tracking-wider italic transition-all hover:scale-105 text-center shadow-[0_0_20px_rgba(16,185,129,0.3)] block"
+                >
+                  Jugar Ahora
+                </Link>
+              </div>
+            </div>
+
+            {/* Tarjeta Labyrinth */}
+            <div className="group relative bg-slate-900/40 backdrop-blur-md border border-white/5 p-4 rounded-[2rem] hover:border-violet-500/20 transition-all flex flex-col gap-4 shadow-xl hover:shadow-violet-500/2">
+              <div className="absolute top-0 right-12 w-16 h-[1.5px] bg-violet-500/30"></div>
+              <div className="relative aspect-[2/1] w-full rounded-2xl overflow-hidden bg-gradient-to-br from-cyan-500 via-violet-600 to-purple-700 flex flex-col items-center justify-center text-slate-950 font-black shadow-lg">
+                <span className="text-[10px] uppercase tracking-widest text-slate-950/80 font-black mb-1">ESCAPE</span>
+                <span className="text-2xl italic tracking-tighter uppercase font-black">LABYRINTH</span>
+              </div>
+              
+              <div className="flex-1 flex flex-col justify-between space-y-3">
+                <div className="space-y-1.5">
+                  <span className="text-[8px] bg-violet-500/10 border border-violet-500/25 text-violet-400 px-2 py-0.5 rounded-full font-black uppercase tracking-widest inline-block">
+                    Cyber Labyrinth
+                  </span>
+                  <h3 className="text-base font-black text-white italic uppercase tracking-tighter group-hover:text-violet-400 transition-colors">
+                    Escape Labyrinth
+                  </h3>
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    Escapa de laberintos en la oscuridad, esquiva centinelas láser y compra mapas reveladores o criogenizadores.
+                  </p>
+                </div>
+                <Link 
+                  href="/games/labyrinth"
+                  className="bg-violet-500 hover:bg-violet-400 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl uppercase tracking-wider italic transition-all hover:scale-105 text-center shadow-[0_0_20px_rgba(139,92,246,0.3)] block"
+                >
+                  Jugar Ahora
+                </Link>
+              </div>
+            </div>
+
+            {/* Tarjeta Jump */}
+            <div className="group relative bg-slate-900/40 backdrop-blur-md border border-white/5 p-4 rounded-[2rem] hover:border-pink-500/20 transition-all flex flex-col gap-4 shadow-xl hover:shadow-pink-500/2">
+              <div className="absolute top-0 right-12 w-16 h-[1.5px] bg-pink-500/30"></div>
+              <div className="relative aspect-[2/1] w-full rounded-2xl overflow-hidden bg-gradient-to-br from-pink-500 via-rose-500 to-red-600 flex flex-col items-center justify-center text-slate-950 font-black shadow-lg">
+                <span className="text-[10px] uppercase tracking-widest text-slate-950/80 font-black mb-1">IMPOSSIBLE</span>
+                <span className="text-2xl italic tracking-tighter uppercase font-black">JUMP</span>
+              </div>
+              
+              <div className="flex-1 flex flex-col justify-between space-y-3">
+                <div className="space-y-1.5">
+                  <span className="text-[8px] bg-pink-500/10 border border-pink-500/25 text-pink-400 px-2 py-0.5 rounded-full font-black uppercase tracking-widest inline-block">
+                    Hardcore Jump
+                  </span>
+                  <h3 className="text-base font-black text-white italic uppercase tracking-tighter group-hover:text-pink-400 transition-colors">
+                    Impossible Jump
+                  </h3>
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    Sincroniza tus saltos contra trampas de lava y picos en este desafiante platformer con gravedad invertida.
+                  </p>
+                </div>
+                <Link 
+                  href="/games/jump"
+                  className="bg-pink-500 hover:bg-pink-400 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl uppercase tracking-wider italic transition-all hover:scale-105 text-center shadow-[0_0_20px_rgba(236,72,153,0.3)] block"
+                >
+                  Jugar Ahora
+                </Link>
+              </div>
+            </div>
+
+            {/* Tarjeta Roguelike */}
+            <div className="group relative bg-slate-900/40 backdrop-blur-md border border-white/5 p-4 rounded-[2rem] hover:border-amber-500/20 transition-all flex flex-col gap-4 shadow-xl hover:shadow-amber-500/2">
+              <div className="absolute top-0 right-12 w-16 h-[1.5px] bg-amber-500/30"></div>
+              <div className="relative aspect-[2/1] w-full rounded-2xl overflow-hidden bg-gradient-to-br from-amber-400 via-orange-500 to-red-600 flex flex-col items-center justify-center text-slate-950 font-black shadow-lg">
+                <span className="text-[10px] uppercase tracking-widest text-slate-950/80 font-black mb-1">MINI</span>
+                <span className="text-2xl italic tracking-tighter uppercase font-black">ROGUELIKE</span>
+              </div>
+              
+              <div className="flex-1 flex flex-col justify-between space-y-3">
+                <div className="space-y-1.5">
+                  <span className="text-[8px] bg-amber-500/10 border border-amber-500/25 text-amber-400 px-2 py-0.5 rounded-full font-black uppercase tracking-widest inline-block">
+                    Procedural Dungeon
+                  </span>
+                  <h3 className="text-base font-black text-white italic uppercase tracking-tighter group-hover:text-amber-400 transition-colors">
+                    Mini Roguelike
+                  </h3>
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    Combate criaturas con espada en mano, recoge tesoros, compra mejoras en el herrero y desciende pisos.
+                  </p>
+                </div>
+                <Link 
+                  href="/games/roguelike"
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs px-4 py-2.5 rounded-xl uppercase tracking-wider italic transition-all hover:scale-105 text-center shadow-[0_0_20px_rgba(245,158,11,0.3)] block"
                 >
                   Jugar Ahora
                 </Link>

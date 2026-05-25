@@ -41,6 +41,16 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  // RPG & Referidos
+  level               Int       @default(1)
+  xp                  Int       @default(0)
+  gems                Int       @default(0)
+  referralCode        String?   @unique
+  referredById        String?
+  referredBy          User?     @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals           User[]    @relation("UserReferrals")
+  claimedLevelRewards String    @default("")
+
   auditLogs     AuditLog[]
   withdrawals   Withdrawal[]
   completedMissions UserMission[]

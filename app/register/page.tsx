@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { signIn } from "next-auth/react";
 import { 
@@ -14,7 +14,8 @@ import {
   Database,
   Globe,
   Home,
-  ChevronLeft
+  ChevronLeft,
+  Gift
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -28,9 +29,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { registerAction } from "@/lib/actions/auth";
 
-export default function RegisterPage() {
+function RegisterContent() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [referralCode, setReferralCode] = useState("");
+
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) {
+      setReferralCode(ref.toUpperCase());
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -40,14 +50,20 @@ export default function RegisterPage() {
     const name = formData.get("name") as string;
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
+    const refCode = formData.get("referralCode") as string;
 
     try {
-      const result = await registerAction({ name, email, password });
+      const result = await registerAction({ 
+        name, 
+        email, 
+        password, 
+        referralCode: refCode 
+      });
 
       if (result?.error) {
         toast.error(result.error);
       } else {
-        toast.success("Cuenta creada correctamente. Ya puedes iniciar sesión.");
+        toast.success("Cuenta creada correctamente. ¡Bono de registro de $0.02 acreditado! Ya puedes iniciar sesión.");
         router.push("/login");
       }
     } catch (error) {
@@ -64,9 +80,6 @@ export default function RegisterPage() {
   return (
     <PageTurn>
       <div className="relative min-h-screen flex flex-col lg:flex-row bg-[#020617] overflow-hidden selection:bg-cyan-500/30">
-        
-
-
         {/* Left Side: Brand Experience */}
         <div className="hidden lg:flex relative w-1/2 h-full min-h-screen items-center justify-center p-12 overflow-hidden border-r border-white/5">
           {/* Animated Background for Left Side */}
@@ -76,6 +89,7 @@ export default function RegisterPage() {
               alt="Gaming Background" 
               fill 
               className="object-cover opacity-40 grayscale-[0.3] pointer-events-none"
+              priority
             />
             <div className="absolute inset-0 bg-gradient-to-tr from-blue-950/40 via-[#020617] to-[#020617]"></div>
             
@@ -102,11 +116,11 @@ export default function RegisterPage() {
               </div>
               
               <h2 className="text-5xl font-black text-white leading-tight mb-6 uppercase tracking-tighter">
-                Únete a la <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-500">Revolución</span> Digital
+                Únete a la <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-500">Revolución</span> Gaming
               </h2>
               
               <p className="text-slate-400 text-lg font-medium leading-relaxed mb-10">
-                Crea tu cuenta en segundos y accede a herramientas de gestión empresarial de última generación.
+                Crea tu cuenta hoy y obtén un bono de <span className="text-emerald-400 font-bold">$0.02 USD de inmediato</span>. ¡Juega, sube de nivel y compite con amigos!
               </p>
 
               <div className="grid grid-cols-2 gap-6">
@@ -115,14 +129,14 @@ export default function RegisterPage() {
                     <Database className="h-5 w-5 text-cyan-400" />
                   </div>
                   <p className="text-white font-bold uppercase tracking-widest text-[10px] mb-1">Escalabilidad</p>
-                  <p className="text-slate-500 text-xs font-medium">Crece sin límites técnicos</p>
+                  <p className="text-slate-500 text-xs font-medium">Juegos optimizados a 60 FPS</p>
                 </div>
                 <div className="p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm group hover:border-blue-500/30 transition-colors cursor-pointer">
                   <div className="h-8 w-8 bg-blue-500/20 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <Globe className="h-5 w-5 text-blue-400" />
                   </div>
-                  <p className="text-white font-bold uppercase tracking-widest text-[10px] mb-1">Global</p>
-                  <p className="text-slate-500 text-xs font-medium">Acceso desde cualquier lugar</p>
+                  <p className="text-white font-bold uppercase tracking-widest text-[10px] mb-1">Referidos</p>
+                  <p className="text-slate-500 text-xs font-medium">Gana $0.50 por cada amigo</p>
                 </div>
               </div>
             </AnimatedContainer>
@@ -206,6 +220,21 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
+                <div className="space-y-1">
+                  <Label htmlFor="referralCode" className="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-1">Código de Referido (Opcional)</Label>
+                  <div className="relative group/input">
+                    <Gift className="absolute left-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 group-focus-within/input:text-cyan-400 transition-colors" />
+                    <Input
+                      id="referralCode"
+                      name="referralCode"
+                      value={referralCode}
+                      onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                      placeholder="Ej: REF-XXXXX"
+                      className="pl-12 h-10 text-xs bg-black/40 border-white/5 text-cyan-400 font-bold uppercase tracking-wider"
+                    />
+                  </div>
+                </div>
+
                 <MotionButton
                   type="submit"
                   glow
@@ -258,7 +287,7 @@ export default function RegisterPage() {
 
                 <div className="text-center pt-2">
                   <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                    Ya eres parte?{" "}
+                    ¿Ya eres parte?{" "}
                     <Link href="/login" className="text-cyan-500 font-black hover:text-cyan-400 ml-1 underline decoration-cyan-500/30 underline-offset-4">
                       Inicia sesión
                     </Link>
@@ -270,5 +299,17 @@ export default function RegisterPage() {
         </div>
       </div>
     </PageTurn>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+        <Loader2 className="h-8 w-8 text-cyan-500 animate-spin" />
+      </div>
+    }>
+      <RegisterContent />
+    </Suspense>
   );
 }

@@ -44,10 +44,22 @@ export default async function RecompensasPage() {
     console.warn("AVISO: El modelo 'userMission' aún no está disponible en la caché de Prisma.");
   }
 
-  // Traemos los datos del usuario actual para tener su PlayerID (#0000)
+  // Traemos los datos del usuario actual para tener su PlayerID y datos RPG/Referidos
   const currentUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { playerId: true }
+    select: { 
+      playerId: true,
+      level: true,
+      xp: true,
+      gems: true,
+      referralCode: true,
+      claimedLevelRewards: true
+    }
+  });
+
+  // Contar cantidad de referidos del usuario
+  const referralsCount = await prisma.user.count({
+    where: { referredById: session.user.id }
   });
 
   return (
@@ -62,6 +74,12 @@ export default async function RecompensasPage() {
           currentPlayerId={currentUser?.playerId || "0000"} // ID para AdGem
           userRole={session.user.role}
           completedMissions={completedIds}
+          userLevel={currentUser?.level || 1}
+          userXp={currentUser?.xp || 0}
+          userGems={currentUser?.gems || 0}
+          referralCode={currentUser?.referralCode || ""}
+          claimedLevelRewards={currentUser?.claimedLevelRewards || ""}
+          referralsCount={referralsCount}
         />
       </div>
 

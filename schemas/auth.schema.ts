@@ -12,6 +12,7 @@ export const registerSchema = z.object({
   phoneNumber: z.string().min(6, "Teléfono inválido").optional(),
   company: z.string().min(2, "Nombre de empresa inválido").optional(),
   role: z.enum(["ADMIN", "EMPLOYEE", "CLIENT"]).optional().default("CLIENT"),
+  referralCode: z.string().optional(),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

@@ -3,6 +3,7 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { LEVEL_REWARDS } from "./constants";
 
 // Lista de misiones diarias por defecto
 const DEFAULT_MISSIONS = {
@@ -16,6 +17,21 @@ const DEFAULT_MISSIONS = {
     { id: "puz_lvls", title: "Explorador de Niveles", description: "Completa 3 niveles del puzzle", targetType: "levelsCompleted", targetValue: 3, rewardCoins: 80, rewardXp: 120 },
     { id: "puz_score", title: "Estratega Brillante", description: "Obtén 5,000 puntos en un nivel", targetType: "score", targetValue: 5000, rewardCoins: 100, rewardXp: 150 },
     { id: "puz_combos", title: "Rey de los Combos", description: "Consigue un combo de 5 o más en una partida", targetType: "combo", targetValue: 5, rewardCoins: 120, rewardXp: 200 }
+  ],
+  labyrinth: [
+    { id: "lab_lvls", title: "Cartógrafo Neón", description: "Escapa de 3 laberintos", targetType: "levelsCompleted", targetValue: 3, rewardCoins: 100, rewardXp: 150 },
+    { id: "lab_keys", title: "Ladrón de Llaves", description: "Recoge 5 llaves en total", targetType: "keysCollected", targetValue: 5, rewardCoins: 80, rewardXp: 120 },
+    { id: "lab_enemies", title: "Evasor de Sombras", description: "Esquiva enemigos por 2 minutos (120s)", targetType: "playTime", targetValue: 120, rewardCoins: 70, rewardXp: 100 }
+  ],
+  jump: [
+    { id: "jmp_lvls", title: "Saltador Imposible", description: "Supera 3 niveles de saltos precisos", targetType: "levelsCompleted", targetValue: 3, rewardCoins: 120, rewardXp: 180 },
+    { id: "jmp_flips", title: "Señor de la Gravedad", description: "Realiza 10 flips de gravedad en total", targetType: "gravityFlips", targetValue: 10, rewardCoins: 80, rewardXp: 130 },
+    { id: "jmp_attempts", title: "Persistencia Extrema", description: "Intenta 5 partidas en total", targetType: "gamesPlayed", targetValue: 5, rewardCoins: 50, rewardXp: 80 }
+  ],
+  roguelike: [
+    { id: "rog_kills", title: "Cazador de Slimes", description: "Derrota a 15 enemigos en la mazmorra", targetType: "kills", targetValue: 15, rewardCoins: 110, rewardXp: 160 },
+    { id: "rog_chests", title: "Buscador de Tesoros", description: "Abre 5 cofres de loot", targetType: "chestsOpened", targetValue: 5, rewardCoins: 90, rewardXp: 130 },
+    { id: "rog_lvls", title: "Héroe Legendario", description: "Alcanza el piso 5 en una partida", targetType: "levelsCompleted", targetValue: 5, rewardCoins: 150, rewardXp: 220 }
   ]
 };
 
@@ -32,7 +48,7 @@ async function checkTableExists(modelName: string): Promise<boolean> {
 /**
  * Obtener o crear progreso del juego, cargar misiones y rankings.
  */
-export async function getGameProgress(gameId: "runner" | "puzzle") {
+export async function getGameProgress(gameId: "runner" | "puzzle" | "labyrinth" | "jump" | "roguelike") {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, error: "No autorizado", isDemoMode: true };
@@ -140,7 +156,7 @@ export async function getGameProgress(gameId: "runner" | "puzzle") {
  * Guardar el progreso de una partida (sumar monedas, XP, registrar récord y actualizar misiones).
  */
 export async function saveGameProgress(
-  gameId: "runner" | "puzzle",
+  gameId: "runner" | "puzzle" | "labyrinth" | "jump" | "roguelike",
   results: {
     score: number;
     coinsEarned: number;
@@ -149,6 +165,10 @@ export async function saveGameProgress(
     levelsCompleted?: number;
     timePlayed?: number; // en segundos
     combosEarned?: number;
+    keysCollected?: number;
+    gravityFlips?: number;
+    kills?: number;
+    chestsOpened?: number;
   }
 ) {
   const session = await auth();
@@ -207,6 +227,32 @@ export async function saveGameProgress(
       }
     });
 
+    // Actualizar nivel RPG y XP global en la tabla User
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { xp: true, level: true, gems: true }
+    });
+
+    let didGlobalLevelUp = false;
+    let globalLevel = 1;
+    let gemsEarned = 0;
+
+    if (user) {
+      const globalXp = user.xp + results.xpEarned;
+      globalLevel = Math.floor(Math.sqrt(globalXp / 500)) + 1;
+      didGlobalLevelUp = globalLevel > user.level;
+      gemsEarned = didGlobalLevelUp ? (globalLevel * 2) : 0;
+
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          xp: globalXp,
+          level: globalLevel,
+          gems: { increment: gemsEarned }
+        }
+      });
+    }
+
     // 2. Actualizar misiones del usuario
     const activeMissions = DEFAULT_MISSIONS[gameId];
     const missionUpdates = [];
@@ -217,9 +263,6 @@ export async function saveGameProgress(
       if (mission.targetType === "distance" && results.distanceRun) {
         incrementValue = results.distanceRun;
       } else if (mission.targetType === "coins" && results.coinsEarned) {
-        // En misiones tipo "monedas", puede ser acumulable o en una sola partida. Por la descripción "en una partida":
-        // Si el valor logrado en esta partida supera el anterior o si es acumulable.
-        // Haremos que las misiones de monedas sean acumulativas diarias para mejorar el engagement del usuario
         incrementValue = results.coinsEarned;
       } else if (mission.targetType === "playTime" && results.timePlayed) {
         incrementValue = results.timePlayed;
@@ -228,10 +271,17 @@ export async function saveGameProgress(
       } else if (mission.targetType === "levelsCompleted" && results.levelsCompleted) {
         incrementValue = results.levelsCompleted;
       } else if (mission.targetType === "score" && results.score >= mission.targetValue) {
-        // Misión de puntuación específica en una partida
         incrementValue = mission.targetValue; 
       } else if (mission.targetType === "combo" && results.combosEarned && results.combosEarned >= mission.targetValue) {
         incrementValue = mission.targetValue;
+      } else if (mission.targetType === "keysCollected" && results.keysCollected) {
+        incrementValue = results.keysCollected;
+      } else if (mission.targetType === "gravityFlips" && results.gravityFlips) {
+        incrementValue = results.gravityFlips;
+      } else if (mission.targetType === "kills" && results.kills) {
+        incrementValue = results.kills;
+      } else if (mission.targetType === "chestsOpened" && results.chestsOpened) {
+        incrementValue = results.chestsOpened;
       }
 
       if (incrementValue > 0) {
@@ -288,11 +338,18 @@ export async function saveGameProgress(
 
     // 4. Si subió de nivel, registrar en logs de auditoría y enviar notificación
     if (didLevelUp) {
+      const gameNames: Record<string, string> = {
+        runner: "Cyber Runner",
+        puzzle: "Match-3 Puzzle",
+        labyrinth: "Escape Labyrinth",
+        jump: "Impossible Jump",
+        roguelike: "Mini Roguelike"
+      };
       await prisma.auditLog.create({
         data: {
           userId,
           action: "GAME_LEVEL_UP",
-          description: `El usuario subió al nivel RPG ${newLevel} en el juego ${gameId}.`
+          description: `El usuario subió al nivel RPG ${newLevel} en el juego ${gameNames[gameId] || gameId}.`
         }
       });
 
@@ -300,9 +357,29 @@ export async function saveGameProgress(
         data: {
           userId,
           type: "GAME_LEVEL_UP",
-          title: `¡Subiste de Nivel en ${gameId === "runner" ? "Endless Runner" : "Puzzle Match-3"}!`,
+          title: `¡Subiste de Nivel en ${gameNames[gameId] || gameId}!`,
           message: `¡Felicitaciones! Has alcanzado el nivel ${newLevel}. Sigue jugando para ganar más recompensas.`,
           link: `/games/${gameId}`
+        }
+      });
+    }
+
+    if (didGlobalLevelUp) {
+      await prisma.auditLog.create({
+        data: {
+          userId,
+          action: "GLOBAL_LEVEL_UP",
+          description: `El usuario subió al nivel global RPG ${globalLevel}. ¡Ganó +${gemsEarned} gemas!`
+        }
+      });
+
+      await prisma.notification.create({
+        data: {
+          userId,
+          type: "GLOBAL_LEVEL_UP",
+          title: `¡Subiste de Nivel Global! Level ${globalLevel}`,
+          message: `Has alcanzado el nivel global ${globalLevel}. Ve a la sección de recompensas para ver si puedes reclamar dinero real.`,
+          link: `/recompensas`
         }
       });
     }
@@ -326,7 +403,7 @@ export async function saveGameProgress(
  * Reclamar la recompensa de una misión completada.
  * Otorga Monedas del Juego, XP, y lo más importante: PUNTOS REALES de la plataforma que se pueden canjear por dinero!
  */
-export async function claimMissionReward(gameId: "runner" | "puzzle", missionId: string) {
+export async function claimMissionReward(gameId: "runner" | "puzzle" | "labyrinth" | "jump" | "roguelike", missionId: string) {
   const session = await auth();
   if (!session?.user?.id) {
     return { success: false, error: "No autorizado" };
@@ -413,7 +490,7 @@ export async function claimMissionReward(gameId: "runner" | "puzzle", missionId:
 /**
  * Comprar una skin de personaje usando las monedas ganadas en el juego.
  */
-export async function buySkin(gameId: "runner" | "puzzle", skinId: string, cost: number) {
+export async function buySkin(gameId: "runner" | "puzzle" | "labyrinth" | "jump" | "roguelike", skinId: string, cost: number) {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "No autorizado" };
 
@@ -458,7 +535,7 @@ export async function buySkin(gameId: "runner" | "puzzle", skinId: string, cost:
 /**
  * Seleccionar una skin ya desbloqueada.
  */
-export async function selectSkin(gameId: "runner" | "puzzle", skinId: string) {
+export async function selectSkin(gameId: "runner" | "puzzle" | "labyrinth" | "jump" | "roguelike", skinId: string) {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "No autorizado" };
 
@@ -489,5 +566,69 @@ export async function selectSkin(gameId: "runner" | "puzzle", skinId: string) {
   } catch (error) {
     console.error("Error al seleccionar skin:", error);
     return { success: false, error: "Error en el servidor" };
+  }
+}
+
+// Escalera de recompensas en dólares por nivel global se importa desde constants.ts
+
+/**
+ * Reclamar la recompensa en dólares al subir de nivel global.
+ */
+export async function claimLevelReward(targetLevel: number) {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, error: "No autorizado" };
+
+  const userId = session.user.id;
+  const rewardAmount = LEVEL_REWARDS[targetLevel];
+
+  if (rewardAmount === undefined) {
+    return { success: false, error: "Recompensa de nivel no válida" };
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { level: true, claimedLevelRewards: true }
+    });
+
+    if (!user) return { success: false, error: "Usuario no encontrado" };
+    if (user.level < targetLevel) {
+      return { success: false, error: `Aún no has alcanzado el nivel ${targetLevel} (Nivel actual: ${user.level})` };
+    }
+
+    const claimedArray = user.claimedLevelRewards
+      ? user.claimedLevelRewards.split(",").map(c => c.trim())
+      : [];
+
+    if (claimedArray.includes(targetLevel.toString())) {
+      return { success: false, error: `Ya has reclamado la recompensa del nivel ${targetLevel}` };
+    }
+
+    claimedArray.push(targetLevel.toString());
+    const updatedClaimed = claimedArray.filter(Boolean).join(",");
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: {
+          balance: { increment: rewardAmount },
+          claimedLevelRewards: updatedClaimed
+        }
+      }),
+      prisma.auditLog.create({
+        data: {
+          userId,
+          action: "CLAIMED_LEVEL_REWARD",
+          description: `Reclamó recompensa de nivel global ${targetLevel}: +$${rewardAmount.toFixed(2)} USD`
+        }
+      })
+    ]);
+
+    revalidatePath("/recompensas");
+    revalidatePath("/retiro");
+    return { success: true, rewardAmount };
+  } catch (error) {
+    console.error("Error al reclamar recompensa de nivel:", error);
+    return { success: false, error: "Error en el servidor al reclamar recompensa" };
   }
 }
