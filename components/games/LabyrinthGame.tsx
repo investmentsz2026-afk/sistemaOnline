@@ -143,16 +143,11 @@ export default function LabyrinthGame({
           this.hintArrow = this.add.graphics();
           this.hintArrow.setDepth(90);
 
-          // Colisiones
+          // Colisiones: solo jugador con paredes (enemigos se mueven por tweens, no necesitan collider)
           if (this.player && this.walls) {
             this.physics.add.collider(this.player, this.walls);
           }
-          if (this.enemiesGroup && this.walls) {
-            this.physics.add.collider(this.enemiesGroup, this.walls);
-          }
-          if (this.player && this.enemiesGroup) {
-            this.physics.add.overlap(this.player, this.enemiesGroup, this.handleEnemyCollision, undefined, this);
-          }
+          // Overlap jugador-enemigos se chequea manualmente en update() porque los tweens no actualizan el body
         }
 
         update() {
@@ -197,10 +192,16 @@ export default function LabyrinthGame({
             }
           }
 
-          // Mover enemigos si no están congelados
-          if (!this.enemiesFrozen && this.enemiesGroup) {
+          // Verificar colisión jugador-enemigos manualmente (los tweens no mueven el body automáticamente)
+          if (this.enemiesGroup && this.player) {
             this.enemiesGroup.getChildren().forEach((enemy: any) => {
-              this.updateEnemyMovement(enemy);
+              if (!enemy.active) return;
+              // Sincronizar la posición del body con la posición visual
+              enemy.body.reset(enemy.x, enemy.y);
+              const dist = Phaser.Math.Distance.Between(this.player!.x, this.player!.y, enemy.x, enemy.y);
+              if (dist < 20) {
+                this.handleEnemyCollision(this.player, enemy);
+              }
             });
           }
 
@@ -356,8 +357,9 @@ export default function LabyrinthGame({
         createEnemies() {
           this.enemiesGroup = this.physics.add.group();
           
-          // Crear un enemigo por cada 4 celdas de tamaño, con un mínimo de 1 y máximo de 6
-          const enemyCount = Math.max(1, Math.min(Math.floor(GRID_SIZE / 2), 6));
+          // Más enemigos conforme avanza el nivel, mínimo 2, máximo 8
+          const baseCount = Math.max(2, Math.min(Math.floor(GRID_SIZE / 2), 6));
+          const enemyCount = Math.min(8, baseCount + Math.floor(level / 3));
           const hasStalker = (level % 5 === 0);
 
           // Mostrar alerta de stalker al inicio si aplica
@@ -386,16 +388,18 @@ export default function LabyrinthGame({
             const enemy = this.enemiesGroup.create(ex, ey, textureKey);
             enemy.setCircle(12);
             enemy.setCollideWorldBounds(true);
+            // NO añadir collider con paredes - el movimiento celda a celda ya los restringe
+            enemy.body.setImmovable(false);
             
             // Propiedades personalizadas para movimiento celda a celda
             enemy.gridX = c;
             enemy.gridY = r;
-            enemy.targetGridX = c;
-            enemy.targetGridY = r;
+            enemy.isMoving = false;
             enemy.isStalker = isThisStalker;
-            enemy.moveSpeed = isThisStalker ? 100 : 75; // El stalker es más veloz
+            enemy.moveSpeed = isThisStalker ? 220 : 280; // ms por celda (menor = más rápido)
             
             if (isThisStalker) {
+              enemy.moveSpeed = 200; // Stalker es rápido
               const emitter = (this.add as any).particles(0, 0, "tex_spark", {
                 speed: 15,
                 scale: { start: 0.5, end: 0 },
@@ -407,86 +411,94 @@ export default function LabyrinthGame({
               emitter.startFollow(enemy);
             }
 
-            this.decideNextCell(enemy);
+            // Iniciar patrullaje con un delay aleatorio para no moverlos todos a la vez
+            this.time.delayedCall(Phaser.Math.Between(100, 500), () => {
+              if (this.sys.isActive()) {
+                this.moveEnemyToNextCell(enemy);
+              }
+            });
           }
         }
 
-        decideNextCell(enemy: any) {
+        moveEnemyToNextCell(enemy: any) {
+          if (!this.sys.isActive() || !enemy.active || this.isEscaped) return;
           if (this.enemiesFrozen) {
-            enemy.body.setVelocity(0, 0);
+            // Reintentar en 500ms
+            this.time.delayedCall(500, () => this.moveEnemyToNextCell(enemy));
             return;
           }
 
           const r = enemy.gridY;
           const c = enemy.gridX;
+          let nextDir: { x: number; y: number } | null = null;
 
-          let nextDir = null;
-
+          // Si es stalker, usar BFS para encontrar al jugador
           if (enemy.isStalker && this.player) {
             const playerC = Math.floor(this.player.x / CELL_SIZE);
             const playerR = Math.floor(this.player.y / CELL_SIZE);
             nextDir = this.findNextStepBFS(r, c, playerR, playerC);
           }
 
-          // Si no es stalker o si el BFS falló, elegir dirección aleatoria
+          // Si no es stalker o si el BFS falló, elegir dirección aleatoria válida
           if (!nextDir) {
-            const validDirs = [];
-            if (!this.grid[r][c].walls.top && r > 0) validDirs.push({ x: 0, y: -1 });
-            if (!this.grid[r][c].walls.bottom && r < GRID_SIZE - 1) validDirs.push({ x: 0, y: 1 });
-            if (!this.grid[r][c].walls.left && c > 0) validDirs.push({ x: -1, y: 0 });
-            if (!this.grid[r][c].walls.right && c < GRID_SIZE - 1) validDirs.push({ x: 1, y: 0 });
+            const cell = this.grid[r]?.[c];
+            if (!cell) return;
 
-            // Evitar dar la vuelta en U si hay otras opciones
-            const filteredDirs = validDirs.filter(d => {
-              const vx = enemy.body.velocity.x;
-              const vy = enemy.body.velocity.y;
-              if (vx > 0 && d.x === -1) return false;
-              if (vx < 0 && d.x === 1) return false;
-              if (vy > 0 && d.y === -1) return false;
-              if (vy < 0 && d.y === 1) return false;
-              return true;
-            });
+            const validDirs: { x: number; y: number }[] = [];
+            if (!cell.walls.top && r > 0) validDirs.push({ x: 0, y: -1 });
+            if (!cell.walls.bottom && r < GRID_SIZE - 1) validDirs.push({ x: 0, y: 1 });
+            if (!cell.walls.left && c > 0) validDirs.push({ x: -1, y: 0 });
+            if (!cell.walls.right && c < GRID_SIZE - 1) validDirs.push({ x: 1, y: 0 });
 
-            const choices = filteredDirs.length > 0 ? filteredDirs : validDirs;
-            if (choices.length > 0) {
-              nextDir = Phaser.Math.RND.pick(choices);
+            // Evitar dar la vuelta en U si hay otras opciones (no aplica si solo hay 1 camino)
+            if (validDirs.length > 1 && enemy._lastDir) {
+              const filtered = validDirs.filter(d => 
+                !(d.x === -enemy._lastDir.x && d.y === -enemy._lastDir.y)
+              );
+              if (filtered.length > 0) {
+                nextDir = Phaser.Math.RND.pick(filtered);
+              }
+            }
+            
+            if (!nextDir && validDirs.length > 0) {
+              nextDir = Phaser.Math.RND.pick(validDirs);
             }
           }
 
-          if (nextDir) {
-            enemy.targetGridX = c + nextDir.x;
-            enemy.targetGridY = r + nextDir.y;
-            enemy.body.setVelocity(nextDir.x * enemy.moveSpeed, nextDir.y * enemy.moveSpeed);
-          } else {
-            enemy.body.setVelocity(0, 0);
-          }
-        }
-
-        updateEnemyMovement(enemy: any) {
-          if (this.enemiesFrozen) {
-            enemy.body.setVelocity(0, 0);
+          if (!nextDir) {
+            // Sin camino disponible, reintentar pronto
+            this.time.delayedCall(300, () => this.moveEnemyToNextCell(enemy));
             return;
           }
 
-          const targetX = enemy.targetGridX * CELL_SIZE + CELL_SIZE / 2;
-          const targetY = enemy.targetGridY * CELL_SIZE + CELL_SIZE / 2;
+          enemy._lastDir = nextDir;
+          const newC = c + nextDir.x;
+          const newR = r + nextDir.y;
+          const targetX = newC * CELL_SIZE + CELL_SIZE / 2;
+          const targetY = newR * CELL_SIZE + CELL_SIZE / 2;
 
-          const vx = enemy.body.velocity.x;
-          const vy = enemy.body.velocity.y;
+          // Usar tween para movimiento suave (sin depender de physics collisions)
+          enemy.isMoving = true;
+          this.tweens.add({
+            targets: enemy,
+            x: targetX,
+            y: targetY,
+            duration: enemy.moveSpeed,
+            ease: "Linear",
+            onComplete: () => {
+              if (!enemy.active || !this.sys.isActive()) return;
+              enemy.gridX = newC;
+              enemy.gridY = newR;
+              enemy.isMoving = false;
+              // Inmediatamente moverse a la siguiente celda
+              this.moveEnemyToNextCell(enemy);
+            }
+          });
+        }
 
-          let reached = false;
-          if (vx > 0 && enemy.x >= targetX) reached = true;
-          else if (vx < 0 && enemy.x <= targetX) reached = true;
-          else if (vy > 0 && enemy.y >= targetY) reached = true;
-          else if (vy < 0 && enemy.y <= targetY) reached = true;
-          else if (vx === 0 && vy === 0) reached = true;
-
-          if (reached) {
-            enemy.setPosition(targetX, targetY);
-            enemy.gridX = enemy.targetGridX;
-            enemy.gridY = enemy.targetGridY;
-            this.decideNextCell(enemy);
-          }
+        updateEnemyMovement(_enemy: any) {
+          // Ahora el movimiento es manejado por tweens, este método ya no es necesario
+          // Se mantiene vacío para no romper la llamada en update()
         }
 
         findNextStepBFS(sr: number, sc: number, pr: number, pc: number): { x: number, y: number } | null {
@@ -643,6 +655,13 @@ export default function LabyrinthGame({
           if (this.timerEvent) this.timerEvent.destroy();
           soundSynth.playExplosion();
 
+          // Detener todos los tweens de enemigos
+          if (this.enemiesGroup) {
+            this.enemiesGroup.getChildren().forEach((e: any) => {
+              this.tweens.killTweensOf(e);
+            });
+          }
+
           this.cameras.main.shake(300, 0.01);
           this.spawnImpactParticles(this.player!.x, this.player!.y, 0xff003c, 25);
           
@@ -683,6 +702,7 @@ export default function LabyrinthGame({
           // 1. Eliminar el enemigo que causó la muerte si aplica
           if (this.killingEnemy) {
             this.spawnImpactParticles(this.killingEnemy.x, this.killingEnemy.y, 0xa855f7, 20);
+            this.tweens.killTweensOf(this.killingEnemy);
             this.killingEnemy.destroy();
             this.killingEnemy = null;
           }
@@ -692,7 +712,16 @@ export default function LabyrinthGame({
           this.isEscaped = false;
           this.physics.resume();
 
-          // 3. Dar 20 segundos extras y reiniciar el timer
+          // 3. Reanudar movimiento de enemigos restantes
+          if (this.enemiesGroup) {
+            this.enemiesGroup.getChildren().forEach((enemy: any) => {
+              if (enemy.active && !enemy.isMoving) {
+                this.moveEnemyToNextCell(enemy);
+              }
+            });
+          }
+
+          // 4. Dar 20 segundos extras y reiniciar el timer
           this.timeLeft += 20;
           if (this.timerEvent) this.timerEvent.destroy();
           this.timerEvent = this.time.addEvent({
@@ -702,7 +731,7 @@ export default function LabyrinthGame({
             loop: true
           });
 
-          // 4. Activar invulnerabilidad por 3 segundos (parpadeo visual)
+          // 5. Activar invulnerabilidad por 3 segundos (parpadeo visual)
           this.isInvulnerable = true;
           this.player.setAlpha(0.5);
 
@@ -726,20 +755,21 @@ export default function LabyrinthGame({
           this.showFloatingText(this.player!.x, this.player!.y - 30, "¡ENEMIGOS CONGELADOS!", 0x38bdf8);
           soundSynth.playSlide();
           
+          // Detener todos los tweens de enemigos y aplicar tinte de hielo
           if (this.enemiesGroup) {
             this.enemiesGroup.getChildren().forEach((enemy: any) => {
-              enemy.body.setVelocity(0, 0);
+              this.tweens.killTweensOf(enemy);
               enemy.setTint(0x38bdf8);
             });
           }
 
-          // Descongelar en 8 segundos
+          // Descongelar en 8 segundos y reanudar movimiento
           this.time.delayedCall(8000, () => {
             this.enemiesFrozen = false;
             if (this.enemiesGroup && this.sys.isActive()) {
               this.enemiesGroup.getChildren().forEach((enemy: any) => {
                 enemy.clearTint();
-                this.decideNextCell(enemy);
+                this.moveEnemyToNextCell(enemy);
               });
             }
           });

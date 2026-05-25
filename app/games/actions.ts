@@ -169,6 +169,7 @@ export async function saveGameProgress(
     gravityFlips?: number;
     kills?: number;
     chestsOpened?: number;
+    selectedLevel?: number; // Nivel que el usuario acaba de completar
   }
 ) {
   const session = await auth();
@@ -197,7 +198,10 @@ export async function saveGameProgress(
     const newHighScore = isNewHighScore ? results.score : currentProgress.highScore;
 
     // Calcular Nivel RPG (Fórmula: raíz cuadrada de XP dividida por 200, + 1)
-    const newLevel = Math.floor(Math.sqrt(newXp / 200)) + 1;
+    const rpgLevel = Math.floor(Math.sqrt(newXp / 200)) + 1;
+    // El nivel debe ser el máximo entre: nivel RPG, nivel actual, y el nivel que se acaba de completar + 1
+    const unlockedLevel = results.selectedLevel ? results.selectedLevel + 1 : currentProgress.level;
+    const newLevel = Math.max(rpgLevel, currentProgress.level, unlockedLevel);
     const didLevelUp = newLevel > currentProgress.level;
 
     // Actualizar JSON de estadísticas

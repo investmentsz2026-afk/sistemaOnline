@@ -135,7 +135,8 @@ export default function LabyrinthPage() {
             coinsEarned: stats.coins,
             xpEarned,
             levelsCompleted: 1,
-            timePlayed: 90
+            timePlayed: 90,
+            selectedLevel
           });
           if (res.success) {
             toast.success(`¡Nivel ${selectedLevel} guardado en el servidor!`);

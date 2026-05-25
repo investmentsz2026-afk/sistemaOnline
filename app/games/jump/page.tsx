@@ -136,7 +136,8 @@ export default function JumpPage() {
             xpEarned,
             levelsCompleted: 1,
             gravityFlips: stats.gravityFlips,
-            timePlayed: 60
+            timePlayed: 60,
+            selectedLevel
           });
           if (res.success) {
             toast.success(`¡Nivel ${selectedLevel} guardado en el servidor!`);

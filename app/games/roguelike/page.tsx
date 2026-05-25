@@ -139,7 +139,8 @@ export default function RoguelikePage() {
             levelsCompleted: stats.floorReached,
             kills: stats.kills,
             chestsOpened: stats.chestsOpened,
-            timePlayed: 120
+            timePlayed: 120,
+            selectedLevel
           });
           if (res.success) {
             toast.success(`¡Progreso de mazmorra guardado en el servidor!`);

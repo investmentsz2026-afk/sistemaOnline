@@ -180,7 +180,8 @@ export default function PuzzlePage() {
           coinsEarned,
           xpEarned,
           levelsCompleted: 1,
-          timePlayed: 120 // promedio
+          timePlayed: 120,
+          selectedLevel
         });
 
         if (res.success) {
