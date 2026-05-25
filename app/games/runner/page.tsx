@@ -345,7 +345,7 @@ export default function RunnerPage() {
   // Ver anuncio recompensado real de Monetag para Revivir
   const watchAdToRevive = () => {
     // Abrir el enlace directo de anuncios de Monetag en nueva pestaña
-    window.open("https://quge5.com/88/tag.min.js?zone=238672", "_blank");
+    window.open("https://omg10.com/4/11056718", "_blank");
     // Mostrar overlay del conteo regresivo
     setIsRewardedOpen(true);
   };

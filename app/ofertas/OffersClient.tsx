@@ -36,9 +36,9 @@ export const OffersClient = ({ initialPoints, initialBalance }: OffersClientProp
   });
 
   const earnOptions = [
-    { id: "v1", title: "Anuncio de Video", pts: 50, desc: "Mira un video corto y suma puntos al instante.", icon: PlayCircle, color: "from-cyan-500 to-blue-600", url: "https://quge5.com/88/tag.min.js?zone=238672" },
-    { id: "v2", title: "Oferta Especial", pts: 100, desc: "Anuncio de alto valor para usuarios premium.", icon: Sparkles, color: "from-purple-500 to-indigo-600", url: "https://quge5.com/88/tag.min.js?zone=238672" },
-    { id: "v3", title: "Mega Bono", pts: 500, desc: "Completa la visualización para un bono masivo.", icon: Trophy, color: "from-orange-500 to-red-600", url: "https://quge5.com/88/tag.min.js?zone=238672" },
+    { id: "v1", title: "Anuncio de Video", pts: 50, desc: "Mira un video corto y suma puntos al instante.", icon: PlayCircle, color: "from-cyan-500 to-blue-600", url: "https://omg10.com/4/11056718" },
+    { id: "v2", title: "Oferta Especial", pts: 100, desc: "Anuncio de alto valor para usuarios premium.", icon: Sparkles, color: "from-purple-500 to-indigo-600", url: "https://omg10.com/4/11056718" },
+    { id: "v3", title: "Mega Bono", pts: 500, desc: "Completa la visualización para un bono masivo.", icon: Trophy, color: "from-orange-500 to-red-600", url: "https://omg10.com/4/11056718" },
   ];
 
   const handleEarn = async (opt: any) => {
@@ -87,9 +87,8 @@ export const OffersClient = ({ initialPoints, initialBalance }: OffersClientProp
   return (
     <div className="max-w-6xl mx-auto space-y-10">
       {/* Monetag Scripts */}
-      <Script src="https://quge5.com/88/tag.min.js" data-zone="238672" async data-cfasync="false" />
       <Script id="monetag-push">{`(function(s){s.dataset.zone='10997142',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`}</Script>
-      <Script src="https://n6wxm.com/vignette.min.js" data-zone="10997145" async data-cfasync="false" />
+      <Script src="https://n6wxm.com/vignette.min.js" data-zone="11056724" async data-cfasync="false" />
 
       {/* Header Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

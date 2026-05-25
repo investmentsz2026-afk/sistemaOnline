@@ -249,7 +249,7 @@ export default function LabyrinthPage() {
   };
 
   const watchAdToRevive = () => {
-    window.open("https://quge5.com/88/tag.min.js?zone=238672", "_blank");
+    window.open("https://omg10.com/4/11056718", "_blank");
     setIsRewardedOpen(true);
   };
 

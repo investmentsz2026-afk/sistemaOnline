@@ -335,7 +335,7 @@ export default function PuzzlePage() {
   // Revivir en el Puzzle (conseguir 5 movimientos extra por ver un anuncio recompensado de Monetag)
   const watchAdToRevive = () => {
     // Abrir el enlace directo de anuncios de Monetag en nueva pestaña
-    window.open("https://quge5.com/88/tag.min.js?zone=238672", "_blank");
+    window.open("https://omg10.com/4/11056718", "_blank");
     // Mostrar overlay del conteo regresivo
     setIsRewardedOpen(true);
   };
