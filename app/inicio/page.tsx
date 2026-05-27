@@ -12,7 +12,6 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { LifeBuoy, TrendingUp, ArrowRight, Gamepad2, Sparkles } from "lucide-react";
-import { LevelRewardsTimeline } from "@/components/LevelRewardsTimeline";
 
 export default async function InicioPage() {
   const session = await auth();
@@ -26,16 +25,10 @@ export default async function InicioPage() {
   
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { 
-      balance: true,
-      level: true,
-      claimedLevelRewards: true
-    }
+    select: { balance: true }
   });
 
   const balance = user?.balance || 0;
-  const level = user?.level || 1;
-  const claimedLevelRewards = user?.claimedLevelRewards || "";
   
   return (
     <main className="min-h-screen bg-[#050a1f] text-white selection:bg-cyan-500/30 overflow-x-hidden">
@@ -196,14 +189,6 @@ export default async function InicioPage() {
               </div>
             </div>
           </Link>
-
-          {/* Premios por Nivel RPG (Línea de Tiempo) */}
-          <div className="mt-12 mb-12">
-            <LevelRewardsTimeline 
-              userLevel={level} 
-              initialClaimedLevelRewards={claimedLevelRewards} 
-            />
-          </div>
 
           {/* Banner de Soporte */}
           <div className="mt-12 mb-12">

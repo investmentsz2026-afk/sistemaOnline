@@ -9,6 +9,7 @@ import {
   Sparkles, ListTodo, Star, Play, AlertCircle, Eye, Snowflake, Clock, Compass
 } from "lucide-react";
 import { toast } from "sonner";
+import { GameDetailScreen } from "@/components/games/GameDetailScreen";
 
 import { 
   getGameProgress, 
@@ -21,24 +22,23 @@ import { RewardedAd } from "@/components/games/AdsPlaceholder";
 const LabyrinthGame = dynamic(() => import("@/components/games/LabyrinthGame"), {
   ssr: false,
   loading: () => (
-    <div className="flex flex-col items-center justify-center w-full max-w-[420px] sm:max-w-[480px] aspect-square bg-[#020617] rounded-[2.5rem] border border-white/10">
+    <div className="flex flex-col items-center justify-center w-full aspect-[16/9] bg-slate-950/80 rounded-[2rem] border border-white/10">
       <div className="relative w-16 h-16 flex items-center justify-center">
-        <div className="absolute inset-0 border-4 border-cyan-500/20 rounded-full"></div>
-        <div className="absolute inset-0 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+        <div className="absolute inset-0 border-4 border-cyan-500/20 rounded-full animate-pulse"></div>
+        <div className="absolute inset-0 border-4 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
-      <p className="text-cyan-400 text-xs font-black uppercase tracking-widest mt-4 animate-pulse">
-        Inicializando Laberinto...
+      <p className="text-violet-400 text-xs font-black uppercase tracking-widest mt-4 animate-pulse">
+        Cargando Laberinto...
       </p>
     </div>
   )
 });
 
-// Boosters para el laberinto
+// Tienda de Boosters para el Laberinto
 const BOOSTERS = [
-  { id: "map", name: "Mapa Integral", cost: 100, desc: "Revela la estructura completa quitando la niebla temporalmente.", icon: "🗺️" },
-  { id: "freeze", name: "Congelar Enemigos", cost: 150, desc: "Congela todos los monstruos por 8 segundos en la partida.", icon: "❄️" },
-  { id: "time", name: "Tiempo Extra (+20s)", cost: 120, desc: "Suma 20 segundos adicionales para escapar a salvo.", icon: "⏱️" },
-  { id: "hint", name: "Flecha Guía", cost: 80, desc: "Apunta directamente a la llave o al portal de salida.", icon: "🧭" }
+  { id: "minimap", name: "Revelador de Mapa (3s)", cost: 150, desc: "Desactiva la niebla de guerra temporalmente para ver el diseño y enemigos.", icon: "🗺️" },
+  { id: "freeze", name: "Criogenizador (5s)", cost: 100, desc: "Congela a todos los centinelas patrullando la zona por 5 segundos.", icon: "❄️" },
+  { id: "sonar", name: "Sonar de Portal", cost: 120, desc: "Apunta una flecha guía hacia la dirección del portal de escape.", icon: "🧭" }
 ];
 
 export default function LabyrinthPage() {
@@ -54,6 +54,11 @@ export default function LabyrinthPage() {
   const [rankings, setRankings] = useState<any[]>([]);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Estados de progresión RPG
+  const [userLevel, setUserLevel] = useState<number>(1);
+  const [claimedLevelRewards, setClaimedLevelRewards] = useState<string>("");
+  const [showPreGame, setShowPreGame] = useState<boolean>(true);
 
   // Gameplay State
   const [selectedLevel, setSelectedLevel] = useState(1);
@@ -92,6 +97,8 @@ export default function LabyrinthPage() {
           setProgress(res.progress);
           setMissions(res.missions || []);
           setRankings(res.rankings || []);
+          setUserLevel(res.userLevel || 1);
+          setClaimedLevelRewards(res.claimedLevelRewards || "");
         }
       }
     } catch (e) {
@@ -268,6 +275,22 @@ export default function LabyrinthPage() {
   const xpNeededForNext = nextLevelXp - currentLevelXp;
   const xpPercent = Math.min(100, Math.max(0, (xpInCurrentLevel / xpNeededForNext) * 100));
 
+  if (!loading && showPreGame) {
+    return (
+      <div className="relative z-10 pt-8 pb-20 px-4 md:px-8 max-w-7xl mx-auto flex flex-col min-h-screen bg-[#020617] text-white">
+        <GameDetailScreen
+          title="Escape Labyrinth"
+          category="Cyber Labyrinth"
+          desc="Escapa de laberintos en la oscuridad, esquiva centinelas láser y compra mapas reveladores o criogenizadores."
+          userLevel={userLevel}
+          claimedLevelRewards={claimedLevelRewards}
+          thumbUrl="https://img.gamemonetize.com/747v6poddba7w1b1n39dihdf6tmz34gn/512x384.jpg"
+          onPlay={() => setShowPreGame(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative z-10 pt-8 pb-20 px-4 md:px-8 max-w-7xl mx-auto flex flex-col min-h-screen bg-[#020617] text-white">
       {/* HUD Header */}
@@ -410,20 +433,21 @@ export default function LabyrinthPage() {
                   <p className="text-slate-500 text-xs mb-6">Te has quedado sin tiempo o chocaste contra un centinela.</p>
 
                   <div className="flex flex-row gap-4 justify-center">
-                    {revivesUsed < 5 && (
+                    {revivesUsed < 10 ? (
                       <button
                         onClick={watchAdToRevive}
                         className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider italic transition-all hover:scale-105 flex items-center gap-2"
                       >
-                        <Play className="w-4 h-4 fill-current" /> Revivir ({5 - revivesUsed} restantes)
+                        <Play className="w-4 h-4 fill-current" /> Revivir ({10 - revivesUsed} restantes)
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => startLevel(selectedLevel)}
+                        className="bg-white/10 hover:bg-white/20 text-white font-black px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider italic transition-all hover:scale-105"
+                      >
+                        Reiniciar
                       </button>
                     )}
-                    <button
-                      onClick={() => startLevel(selectedLevel)}
-                      className="bg-white/10 hover:bg-white/20 text-white font-black px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider italic transition-all hover:scale-105"
-                    >
-                      Reiniciar
-                    </button>
                   </div>
                 </div>
               )}

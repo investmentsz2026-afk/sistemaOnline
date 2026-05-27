@@ -9,6 +9,7 @@ import {
   Sparkles, ListTodo, Star, Play, AlertCircle, Eye, Shield, Landmark, Activity
 } from "lucide-react";
 import { toast } from "sonner";
+import { GameDetailScreen } from "@/components/games/GameDetailScreen";
 
 import { 
   getGameProgress, 
@@ -54,6 +55,11 @@ export default function JumpPage() {
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Estados de progresión RPG
+  const [userLevel, setUserLevel] = useState<number>(1);
+  const [claimedLevelRewards, setClaimedLevelRewards] = useState<string>("");
+  const [showPreGame, setShowPreGame] = useState<boolean>(true);
+
   // Gameplay State
   const [selectedLevel, setSelectedLevel] = useState(1);
   const [gameActive, setGameActive] = useState(false);
@@ -90,6 +96,8 @@ export default function JumpPage() {
           setProgress(res.progress);
           setMissions(res.missions || []);
           setRankings(res.rankings || []);
+          setUserLevel(res.userLevel || 1);
+          setClaimedLevelRewards(res.claimedLevelRewards || "");
         }
       }
     } catch (e) {
@@ -269,6 +277,22 @@ export default function JumpPage() {
   const xpNeededForNext = nextLevelXp - currentLevelXp;
   const xpPercent = Math.min(100, Math.max(0, (xpInCurrentLevel / xpNeededForNext) * 100));
 
+  if (!loading && showPreGame) {
+    return (
+      <div className="relative z-10 pt-8 pb-20 px-4 md:px-8 max-w-7xl mx-auto flex flex-col min-h-screen bg-[#020617] text-white">
+        <GameDetailScreen
+          title="Impossible Jump"
+          category="Hardcore Jump"
+          desc="Sincroniza tus saltos contra trampas de lava y picos en este desafiante platformer con gravedad invertida."
+          userLevel={userLevel}
+          claimedLevelRewards={claimedLevelRewards}
+          thumbUrl="https://img.gamemonetize.com/3ex0z77vqo2zz4wmellpculd54tqyowc/512x384.jpg"
+          onPlay={() => setShowPreGame(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative z-10 pt-8 pb-20 px-4 md:px-8 max-w-7xl mx-auto flex flex-col min-h-screen bg-[#020617] text-white">
       {/* HUD Header */}
@@ -411,20 +435,21 @@ export default function JumpPage() {
                   <p className="text-slate-500 text-xs mb-6">Un pico de neón te ha desintegrado en el espacio.</p>
 
                   <div className="flex flex-row gap-4 justify-center">
-                    {revivesUsed === 0 && (
+                    {revivesUsed < 10 ? (
                       <button
                         onClick={watchAdToRevive}
                         className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider italic transition-all hover:scale-105 flex items-center gap-2"
                       >
-                        <Play className="w-4 h-4 fill-current" /> Revivir (Checkpoint)
+                        <Play className="w-4 h-4 fill-current" /> Revivir ({10 - revivesUsed} restantes)
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => startLevel(selectedLevel)}
+                        className="bg-white/10 hover:bg-white/20 text-white font-black px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider italic transition-all hover:scale-105"
+                      >
+                        Reiniciar
                       </button>
                     )}
-                    <button
-                      onClick={() => startLevel(selectedLevel)}
-                      className="bg-white/10 hover:bg-white/20 text-white font-black px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider italic transition-all hover:scale-105"
-                    >
-                      Reiniciar
-                    </button>
                   </div>
                 </div>
               )}

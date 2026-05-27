@@ -9,6 +9,7 @@ import {
   Sparkles, ListTodo, Star, Play, RefreshCw, AlertCircle, Trash2, HelpCircle
 } from "lucide-react";
 import { toast } from "sonner";
+import { GameDetailScreen } from "@/components/games/GameDetailScreen";
 
 import { 
   getGameProgress, 
@@ -53,6 +54,11 @@ export default function PuzzlePage() {
   const [rankings, setRankings] = useState<any[]>([]);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Estados de progresión RPG
+  const [userLevel, setUserLevel] = useState<number>(1);
+  const [claimedLevelRewards, setClaimedLevelRewards] = useState<string>("");
+  const [showPreGame, setShowPreGame] = useState<boolean>(true);
 
   // Gameplay State
   const [selectedLevel, setSelectedLevel] = useState(1);
@@ -101,6 +107,8 @@ export default function PuzzlePage() {
           setProgress(res.progress);
           setMissions(res.missions || []);
           setRankings(res.rankings || []);
+          setUserLevel(res.userLevel || 1);
+          setClaimedLevelRewards(res.claimedLevelRewards || "");
         }
       }
     } catch (e) {
@@ -111,20 +119,20 @@ export default function PuzzlePage() {
     }
   };
 
-  // Dinámica de nivel (metas)
+  // Dinámica de nivel (metas con menos movimientos para mayor dificultad)
   const getLevelConfig = (lvl: number) => {
-    let movesLimit = 25;
-    if (lvl === 1) movesLimit = 5;
-    else if (lvl === 2) movesLimit = 8;
-    else if (lvl === 3) movesLimit = 10;
-    else if (lvl === 4) movesLimit = 12;
-    else if (lvl === 5) movesLimit = 14;
-    else if (lvl === 6) movesLimit = 16;
-    else if (lvl === 7) movesLimit = 18;
-    else if (lvl === 8) movesLimit = 20;
-    else if (lvl === 9) movesLimit = 22;
+    let movesLimit = 15;
+    if (lvl === 1) movesLimit = 4;
+    else if (lvl === 2) movesLimit = 6;
+    else if (lvl === 3) movesLimit = 8;
+    else if (lvl === 4) movesLimit = 9;
+    else if (lvl === 5) movesLimit = 10;
+    else if (lvl === 6) movesLimit = 11;
+    else if (lvl === 7) movesLimit = 12;
+    else if (lvl === 8) movesLimit = 13;
+    else if (lvl === 9) movesLimit = 14;
     else {
-      movesLimit = Math.max(12, 26 - Math.floor(lvl / 3));
+      movesLimit = Math.max(8, 15 - Math.floor((lvl - 10) / 4));
     }
     return {
       scoreGoal: lvl * 1000,
@@ -373,6 +381,22 @@ export default function PuzzlePage() {
   // Meta barra de progreso
   const goalPercent = Math.min(100, (currentScore / currentLevelConfig.scoreGoal) * 100);
 
+  if (!loading && showPreGame) {
+    return (
+      <div className="relative z-10 pt-8 pb-20 px-4 md:px-8 max-w-7xl mx-auto flex flex-col min-h-screen">
+        <GameDetailScreen
+          title="Match-3 Puzzle"
+          category="Match-3 Saga"
+          desc="Supera más de 100 niveles desafiantes. Consigue combos masivos y compra boosters especiales para estallar el tablero."
+          userLevel={userLevel}
+          claimedLevelRewards={claimedLevelRewards}
+          thumbUrl="https://img.gamemonetize.com/uevrcg9lfez7iipsw4z91s5inewmeso5/512x384.jpg"
+          onPlay={() => setShowPreGame(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative z-10 pt-8 pb-20 px-4 md:px-8 max-w-7xl mx-auto flex flex-col min-h-screen">
       
@@ -570,21 +594,21 @@ export default function PuzzlePage() {
                     <p className="text-slate-500 text-[10px] sm:text-xs mb-3 sm:mb-6">No alcanzaste la meta de {currentLevelConfig.scoreGoal} puntos</p>
 
                     <div className="flex flex-row gap-2 sm:gap-4 w-full max-w-sm justify-center">
-                      {revivesUsed < 10 && (
+                      {revivesUsed < 10 ? (
                         <button
                           onClick={watchAdToRevive}
                           className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-4 py-2 sm:px-6 sm:py-3.5 rounded-lg sm:rounded-2xl text-[8px] sm:text-xs uppercase tracking-wider italic transition-all hover:scale-105 shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center justify-center gap-1.5"
                         >
-                          <Play className="w-3.5 h-3.5 fill-current" /> Revivir (+5)
+                          <Play className="w-3.5 h-3.5 fill-current" /> Revivir ({10 - revivesUsed} restantes)
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => startLevel(selectedLevel)}
+                          className="bg-white/10 hover:bg-white/20 border border-white/10 text-white font-black px-4 py-2 sm:px-6 sm:py-3.5 rounded-lg sm:rounded-2xl text-[8px] sm:text-xs uppercase tracking-wider italic transition-all hover:scale-105"
+                        >
+                          Reiniciar
                         </button>
                       )}
-                      
-                      <button
-                        onClick={() => startLevel(selectedLevel)}
-                        className="bg-white/10 hover:bg-white/20 border border-white/10 text-white font-black px-4 py-2 sm:px-6 sm:py-3.5 rounded-lg sm:rounded-2xl text-[8px] sm:text-xs uppercase tracking-wider italic transition-all hover:scale-105"
-                      >
-                        Reiniciar
-                      </button>
                     </div>
                   </motion.div>
                 )}

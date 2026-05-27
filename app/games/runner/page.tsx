@@ -9,6 +9,7 @@ import {
   Sparkles, ListTodo, User, Play, RefreshCw, Volume2, AlertTriangle
 } from "lucide-react";
 import { toast } from "sonner";
+import { GameDetailScreen } from "@/components/games/GameDetailScreen";
 
 import { 
   getGameProgress, 
@@ -57,6 +58,11 @@ export default function RunnerPage() {
   const [rankings, setRankings] = useState<any[]>([]);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Estados de progresión RPG
+  const [userLevel, setUserLevel] = useState<number>(1);
+  const [claimedLevelRewards, setClaimedLevelRewards] = useState<string>("");
+  const [showPreGame, setShowPreGame] = useState<boolean>(true);
 
   // Estados de Partida Activa
   const [gameActive, setGameActive] = useState(false);
@@ -139,6 +145,8 @@ export default function RunnerPage() {
           setProgress(res.progress);
           setMissions(res.missions || []);
           setRankings(res.rankings || []);
+          setUserLevel(res.userLevel || 1);
+          setClaimedLevelRewards(res.claimedLevelRewards || "");
         }
       }
     } catch (e) {
@@ -366,6 +374,22 @@ export default function RunnerPage() {
   const xpNeededForNext = nextLevelXp - currentLevelXp;
   const xpPercent = Math.min(100, Math.max(0, (xpInCurrentLevel / xpNeededForNext) * 100));
 
+  if (!loading && showPreGame) {
+    return (
+      <div className="relative z-10 pt-8 pb-20 px-4 md:px-8 max-w-7xl mx-auto flex flex-col min-h-screen">
+        <GameDetailScreen
+          title="Cyber Runner"
+          category="Endless Runner"
+          desc="Esquiva obstáculos a máxima velocidad, activa escudos, imanes de monedas y jetpacks para batir récords globales."
+          userLevel={userLevel}
+          claimedLevelRewards={claimedLevelRewards}
+          thumbUrl="https://img.gamemonetize.com/xqxcsqazsozjzy71jb1hn0a54dorg91d/512x384.jpg"
+          onPlay={() => setShowPreGame(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative z-10 pt-8 pb-20 px-4 md:px-8 max-w-7xl mx-auto flex flex-col min-h-screen">
       
@@ -514,21 +538,21 @@ export default function RunnerPage() {
                     </div>
 
                     <div className="flex flex-row gap-2 w-full max-w-sm justify-center">
-                      {revivesUsed === 0 && (
+                      {revivesUsed < 10 ? (
                         <button
                           onClick={watchAdToRevive}
                           className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-4 py-2 sm:px-6 sm:py-3.5 rounded-lg sm:rounded-2xl text-[8px] sm:text-xs uppercase tracking-wider italic transition-all hover:scale-105 shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center justify-center gap-1.5"
                         >
-                          <Play className="w-3.5 h-3.5 fill-current" /> Revivir
+                          <Play className="w-3.5 h-3.5 fill-current" /> Revivir ({10 - revivesUsed} restantes)
+                        </button>
+                      ) : (
+                        <button
+                          onClick={startNewRun}
+                          className="bg-white/10 hover:bg-white/20 border border-white/10 text-white font-black px-4 py-2 sm:px-6 sm:py-3.5 rounded-lg sm:rounded-2xl text-[8px] sm:text-xs uppercase tracking-wider italic transition-all hover:scale-105 flex items-center justify-center gap-1.5"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" /> Reintentar
                         </button>
                       )}
-                      
-                      <button
-                        onClick={startNewRun}
-                        className="bg-white/10 hover:bg-white/20 border border-white/10 text-white font-black px-4 py-2 sm:px-6 sm:py-3.5 rounded-lg sm:rounded-2xl text-[8px] sm:text-xs uppercase tracking-wider italic transition-all hover:scale-105 flex items-center justify-center gap-1.5"
-                      >
-                        <RefreshCw className="w-3.5 h-3.5" /> Reintentar
-                      </button>
                     </div>
                   </motion.div>
                 )}

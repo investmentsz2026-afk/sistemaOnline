@@ -9,6 +9,7 @@ import {
   Sparkles, ListTodo, Star, Play, AlertCircle, Eye, Swords, Heart, Shield
 } from "lucide-react";
 import { toast } from "sonner";
+import { GameDetailScreen } from "@/components/games/GameDetailScreen";
 
 import { 
   getGameProgress, 
@@ -21,23 +22,23 @@ import { RewardedAd } from "@/components/games/AdsPlaceholder";
 const RoguelikeGame = dynamic(() => import("@/components/games/RoguelikeGame"), {
   ssr: false,
   loading: () => (
-    <div className="flex flex-col items-center justify-center w-full max-w-[550px] aspect-[11/8] bg-[#020617] rounded-[2.5rem] border border-white/10">
+    <div className="flex flex-col items-center justify-center w-full aspect-[16/9] bg-[#020617] rounded-[2.5rem] border border-white/10">
       <div className="relative w-16 h-16 flex items-center justify-center">
-        <div className="absolute inset-0 border-4 border-emerald-500/20 rounded-full"></div>
-        <div className="absolute inset-0 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
+        <div className="absolute inset-0 border-4 border-cyan-500/20 rounded-full animate-pulse"></div>
+        <div className="absolute inset-0 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
-      <p className="text-emerald-400 text-xs font-black uppercase tracking-widest mt-4 animate-pulse">
-        Generando Mazmorra...
+      <p className="text-amber-400 text-xs font-black uppercase tracking-widest mt-4 animate-pulse">
+        Cargando Mazmorra...
       </p>
     </div>
   )
 });
 
-// Boosters para Roguelike
+// Tienda de Boosters para el Roguelike
 const BOOSTERS = [
-  { id: "heal", name: "Poción Curativa", cost: 80, desc: "Restaura la salud del héroe al 100% de inmediato.", icon: "🧪" },
-  { id: "shield", name: "Escudo Rúnico", cost: 150, desc: "Suma +8 a tu defensa para amortiguar los golpes de monstruos.", icon: "🛡️" },
-  { id: "strength", name: "Fuerza Brutal", cost: 120, desc: "Incrementa el daño de tu espada en +15 permanentemente.", icon: "⚔️" }
+  { id: "health_potion", name: "Poción Curativa", cost: 120, desc: "Restaura la salud completa del héroe instantáneamente.", icon: "❤️" },
+  { id: "shield_charm", name: "Amuleto de Hierro", cost: 160, desc: "Aumenta la defensa reduciendo el daño recibido a la mitad.", icon: "🛡️" },
+  { id: "strength_scroll", name: "Pergamino de Fuerza", cost: 200, desc: "Duplica el daño infligido con la espada por 10 segundos.", icon: "⚔️" }
 ];
 
 export default function RoguelikePage() {
@@ -53,6 +54,11 @@ export default function RoguelikePage() {
   const [rankings, setRankings] = useState<any[]>([]);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Estados de progresión RPG
+  const [userLevel, setUserLevel] = useState<number>(1);
+  const [claimedLevelRewards, setClaimedLevelRewards] = useState<string>("");
+  const [showPreGame, setShowPreGame] = useState<boolean>(true);
 
   // Gameplay State
   const [selectedLevel, setSelectedLevel] = useState(1);
@@ -91,6 +97,8 @@ export default function RoguelikePage() {
           setProgress(res.progress);
           setMissions(res.missions || []);
           setRankings(res.rankings || []);
+          setUserLevel(res.userLevel || 1);
+          setClaimedLevelRewards(res.claimedLevelRewards || "");
         }
       }
     } catch (e) {
@@ -272,6 +280,22 @@ export default function RoguelikePage() {
   const xpNeededForNext = nextLevelXp - currentLevelXp;
   const xpPercent = Math.min(100, Math.max(0, (xpInCurrentLevel / xpNeededForNext) * 100));
 
+  if (!loading && showPreGame) {
+    return (
+      <div className="relative z-10 pt-8 pb-20 px-4 md:px-8 max-w-7xl mx-auto flex flex-col min-h-screen bg-[#020617] text-white">
+        <GameDetailScreen
+          title="Mini Roguelike"
+          category="Procedural Dungeon"
+          desc="Combate criaturas con espada en mano, recoge tesoros, compra mejoras en el herrero y desciende pisos."
+          userLevel={userLevel}
+          claimedLevelRewards={claimedLevelRewards}
+          thumbUrl="https://img.gamemonetize.com/l5s3o2it4qyzc217qldfio11urspud5r/512x384.jpg"
+          onPlay={() => setShowPreGame(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="relative z-10 pt-8 pb-20 px-4 md:px-8 max-w-7xl mx-auto flex flex-col min-h-screen bg-[#020617] text-white">
       {/* HUD Header */}
@@ -414,20 +438,21 @@ export default function RoguelikePage() {
                   <p className="text-slate-500 text-xs mb-6">Tu vida llegó a 0. Las criaturas de la mazmorra te derrotaron.</p>
 
                   <div className="flex flex-row gap-4 justify-center">
-                    {revivesUsed === 0 && (
+                    {revivesUsed < 10 ? (
                       <button
                         onClick={watchAdToRevive}
                         className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider italic transition-all hover:scale-105 flex items-center gap-2"
                       >
-                        <Play className="w-4 h-4 fill-current" /> Revivir (Curar HP)
+                        <Play className="w-4 h-4 fill-current" /> Revivir ({10 - revivesUsed} restantes)
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => startLevel(selectedLevel)}
+                        className="bg-white/10 hover:bg-white/20 text-white font-black px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider italic transition-all hover:scale-105"
+                      >
+                        Reiniciar
                       </button>
                     )}
-                    <button
-                      onClick={() => startLevel(selectedLevel)}
-                      className="bg-white/10 hover:bg-white/20 text-white font-black px-6 py-3.5 rounded-2xl text-xs uppercase tracking-wider italic transition-all hover:scale-105"
-                    >
-                      Reiniciar
-                    </button>
                   </div>
                 </div>
               )}

@@ -139,12 +139,19 @@ export async function getGameProgress(gameId: "runner" | "puzzle" | "labyrinth" 
       level: r.level
     }));
 
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { level: true, claimedLevelRewards: true }
+    });
+
     return {
       success: true,
       isDemoMode: false,
       progress,
       missions: missionsWithProgress,
-      rankings
+      rankings,
+      userLevel: user?.level || 1,
+      claimedLevelRewards: user?.claimedLevelRewards || ""
     };
   } catch (error) {
     console.error("Error al obtener progreso de juego:", error);
