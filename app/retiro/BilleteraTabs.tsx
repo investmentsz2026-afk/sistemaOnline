@@ -34,7 +34,9 @@ export function BilleteraTabs({
   playerId,
   welcomeGiftWithdrawn
 }: BilleteraTabsProps) {
-  const [activeTab, setActiveTab] = useState<"recharge" | "withdraw" | "referrals">("recharge");
+  const [activeTab, setActiveTab] = useState<"recharge" | "withdraw" | "referrals">(
+    !welcomeGiftWithdrawn && balance >= 0.02 && balance < 5.00 ? "withdraw" : "recharge"
+  );
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [copied, setCopied] = useState(false);

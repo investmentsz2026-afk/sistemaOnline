@@ -77,7 +77,9 @@ const fiatOptions = [
 ];
 
 export const RetiroOptions = ({ balance, welcomeGiftWithdrawn }: RetiroOptionsProps) => {
-  const [selectedAmount, setSelectedAmount] = useState<number>(5);
+  const [selectedAmount, setSelectedAmount] = useState<number>(
+    !welcomeGiftWithdrawn && balance >= 0.02 && balance < 5.00 ? 0.02 : 5
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<any>(null);
   const [accountInfo, setAccountInfo] = useState("");
