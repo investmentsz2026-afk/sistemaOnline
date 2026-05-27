@@ -7,6 +7,7 @@ import { Zap } from "lucide-react";
 interface PuzzleGameProps {
   level: number;
   movesLimit: number;
+  movesLeft: number;
   scoreGoal: number;
   activeBooster: string | null;
   onBoosterUsed: () => void;
@@ -21,6 +22,7 @@ interface PuzzleGameProps {
 export default function PuzzleGame({
   level,
   movesLimit,
+  movesLeft,
   scoreGoal,
   activeBooster,
   onBoosterUsed,
@@ -726,6 +728,21 @@ export default function PuzzleGame({
       }
     }
   }, [triggerRestart]);
+
+  // Sincronizar movimientos si cambian desde React (ej: al revivir)
+  useEffect(() => {
+    if (gameRef.current) {
+      const activeScene = gameRef.current.scene.keys.PuzzleScene;
+      if (activeScene) {
+        if (activeScene.movesLeft !== movesLeft) {
+          activeScene.movesLeft = movesLeft;
+          if (movesLeft > 0 && activeScene.isActionBlocked) {
+            activeScene.isActionBlocked = false;
+          }
+        }
+      }
+    }
+  }, [movesLeft]);
 
   return (
     <div className="relative w-full h-full flex flex-col items-center">

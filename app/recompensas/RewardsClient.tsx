@@ -441,64 +441,77 @@ export const RewardsClient = ({
                     <Award className="absolute -right-4 -bottom-4 w-40 h-40 text-white/10 rotate-12" />
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="relative space-y-6">
+                    {/* Línea vertical discontinua para la línea de tiempo */}
+                    <div className="absolute left-[23px] top-6 bottom-6 w-0.5 border-l-2 border-dashed border-white/10 pointer-events-none"></div>
+
                     {Object.entries(LEVEL_REWARDS).map(([lvlStr, reward]) => {
                       const lvl = parseInt(lvlStr);
                       const isReached = userLevel >= lvl;
                       const isClaimed = claimedLevels.includes(lvlStr);
                       
                       return (
-                        <div 
-                          key={lvl}
-                          className={cn(
-                            "bg-[#0b0e14] border p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 transition-all",
+                        <div key={lvl} className="flex items-center gap-4 sm:gap-6 relative">
+                          {/* Círculo indicador de nivel */}
+                          <div className={cn(
+                            "w-12 h-12 rounded-full flex items-center justify-center font-black z-10 text-xs border-2 shadow-md flex-shrink-0 transition-all duration-300",
                             isClaimed 
-                              ? "border-slate-800 opacity-60 bg-[#0b0e14]/40" 
+                              ? "bg-slate-900 border-slate-800 text-slate-500 shadow-none" 
+                              : isReached 
+                                ? "bg-cyan-500 border-cyan-400 text-slate-950 shadow-cyan-500/25 animate-pulse" 
+                                : "bg-slate-950 border-white/5 text-slate-600"
+                          )}>
+                            {lvl}
+                          </div>
+
+                          {/* Tarjeta tipo cápsula */}
+                          <div className={cn(
+                            "flex-1 bg-[#111626] border p-4 sm:p-5 rounded-[2rem] flex flex-col sm:flex-row items-center justify-between gap-4 transition-all hover:bg-[#151c30] hover:border-white/10",
+                            isClaimed 
+                              ? "border-slate-800 opacity-60 bg-[#111626]/40" 
                               : isReached 
                                 ? "border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.1)] bg-cyan-950/5" 
                                 : "border-white/5"
-                          )}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className={cn(
-                              "w-12 h-12 rounded-xl flex flex-col items-center justify-center font-black",
-                              isReached ? "bg-cyan-500 text-slate-950" : "bg-slate-950 border border-white/5 text-slate-500"
-                            )}>
-                              <span className="text-[8px] font-bold leading-none mb-0.5">LVL</span>
-                              <span className="text-lg leading-none">{lvl}</span>
-                            </div>
+                          )}>
                             <div className="text-center sm:text-left">
-                              <h4 className="text-sm font-black text-white uppercase">Recompensa de Nivel {lvl}</h4>
-                              <p className="text-xs text-slate-500 font-medium">
-                                {isReached 
-                                  ? "¡Meta alcanzada! Reclama tu efectivo." 
-                                  : `Faltan ${lvl - userLevel} niveles para desbloquear.`}
+                              <h4 className="text-xs sm:text-sm font-black text-white uppercase tracking-wide">
+                                {lvl === 1 ? "¡Instala el Juego!" : `Completar Mundo ${lvl}`}
+                              </h4>
+                              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">
+                                {isClaimed 
+                                  ? "Recompensa reclamada" 
+                                  : isReached 
+                                    ? "¡Meta alcanzada! Reclama tu efectivo." 
+                                    : `Faltan ${lvl - userLevel} niveles para desbloquear.`}
                               </p>
                             </div>
-                          </div>
 
-                          <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                            <span className="text-xl font-black text-emerald-400 italic tabular-nums">
-                              +${reward.toFixed(2)} USD
-                            </span>
+                            <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                              <div className="bg-black/40 px-3 py-1.5 rounded-xl border border-white/5 flex items-center gap-1.5">
+                                <span className="text-xs sm:text-sm font-black text-emerald-400 italic tabular-nums">
+                                  +${reward.toFixed(2)}
+                                </span>
+                                <Coins className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                              </div>
 
-                            {isClaimed ? (
-                              <span className="text-[9px] font-black uppercase text-slate-600 bg-slate-950/50 border border-white/5 px-4 py-2 rounded-xl flex items-center gap-1.5">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-slate-600" /> Reclamado
-                              </span>
-                            ) : isReached ? (
-                              <button
-                                onClick={() => handleClaimLevel(lvl)}
-                                disabled={claimingLevel !== null}
-                                className="bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-black text-[10px] uppercase tracking-widest px-5 py-2.5 rounded-xl hover:scale-105 transition-all shadow-[0_0_15px_rgba(234,179,8,0.3)]"
-                              >
-                                {claimingLevel === lvl ? "Procesando..." : "Reclamar"}
-                              </button>
-                            ) : (
-                              <span className="text-[9px] font-black uppercase text-slate-600 bg-slate-950 border border-white/5 px-4 py-2 rounded-xl">
-                                Bloqueado
-                              </span>
-                            )}
+                              {isClaimed ? (
+                                <span className="text-[9px] font-black uppercase text-slate-600 bg-slate-950/50 border border-white/5 px-4 py-2 rounded-xl flex items-center gap-1.5">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-slate-600" /> Reclamado
+                                </span>
+                              ) : isReached ? (
+                                <button
+                                  onClick={() => handleClaimLevel(lvl)}
+                                  disabled={claimingLevel !== null}
+                                  className="bg-yellow-500 hover:bg-yellow-400 text-slate-950 font-black text-[9px] sm:text-[10px] uppercase tracking-widest px-4 py-2 rounded-xl hover:scale-105 transition-all shadow-[0_0_15px_rgba(234,179,8,0.3)]"
+                                >
+                                  {claimingLevel === lvl ? "Cargando..." : "Reclamar"}
+                                </button>
+                              ) : (
+                                <span className="text-[9px] font-black uppercase text-slate-600 bg-slate-950 border border-white/5 px-4 py-2 rounded-xl">
+                                  Bloqueado
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );

@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bitcoin, CreditCard, Play, CircleDollarSign, Check, X, Send, Loader2 } from "lucide-react";
+import { Bitcoin, CreditCard, Play, CircleDollarSign, Check, X, Send, Loader2, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { createWithdrawalRequest } from "./actions";
 
 interface RetiroOptionsProps {
   balance: number;
+  welcomeGiftWithdrawn: boolean;
 }
 
 const AMOUNTS = [5, 10, 20, 50];
@@ -75,7 +76,7 @@ const fiatOptions = [
   }
 ];
 
-export const RetiroOptions = ({ balance }: RetiroOptionsProps) => {
+export const RetiroOptions = ({ balance, welcomeGiftWithdrawn }: RetiroOptionsProps) => {
   const [selectedAmount, setSelectedAmount] = useState<number>(5);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<any>(null);
@@ -110,6 +111,10 @@ export const RetiroOptions = ({ balance }: RetiroOptionsProps) => {
       toast.success("¡Solicitud enviada con éxito!");
       setIsModalOpen(false);
       setAccountInfo("");
+      if (selectedAmount === 0.02) {
+        setSelectedAmount(5);
+        window.location.reload(); // Reload page to update welcomeGiftWithdrawn state
+      }
     } else {
       toast.error(result.error || "Error al procesar el retiro.");
     }
@@ -179,6 +184,44 @@ export const RetiroOptions = ({ balance }: RetiroOptionsProps) => {
 
   return (
     <div className="space-y-12 pb-20">
+      {/* Regalo de Bienvenida de $0.02 USD */}
+      <div className="bg-[#171c2e] p-6 rounded-[2rem] border border-white/5 shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/3"></div>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-purple-500/10 border border-purple-500/20 rounded-2xl flex items-center justify-center">
+            <Gift className="w-6 h-6 text-purple-400" />
+          </div>
+          <div>
+            <h3 className="text-sm font-black text-white uppercase italic tracking-wider">Regalo de Bienvenida de $0.02 USD</h3>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Retira tu bono de registro de $0.02 USD de inmediato por única vez.</p>
+          </div>
+        </div>
+
+        {welcomeGiftWithdrawn ? (
+          <button
+            disabled
+            className="w-full md:w-auto bg-slate-900 border border-white/5 text-slate-600 px-6 py-3.5 rounded-xl font-black text-[10px] uppercase tracking-widest cursor-not-allowed"
+          >
+            [Retirado / Bloqueado]
+          </button>
+        ) : (
+          <button
+            onClick={() => {
+              setSelectedAmount(0.02);
+              toast.info("Monto de $0.02 USD seleccionado. ¡Elige un método de pago abajo para solicitar tu retiro!");
+            }}
+            className={cn(
+              "w-full md:w-auto px-6 py-3.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all",
+              selectedAmount === 0.02 
+                ? "bg-purple-500 text-slate-950 shadow-lg shadow-purple-500/30" 
+                : "bg-white text-slate-950 hover:bg-purple-500 hover:text-slate-950"
+            )}
+          >
+            {selectedAmount === 0.02 ? "Monto Seleccionado" : "Retirar $0.02 USD"}
+          </button>
+        )}
+      </div>
+
       <div className="bg-[#171c2e] p-6 rounded-[2rem] border border-white/5 shadow-2xl">
         <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em] mb-6 text-center">Selecciona el monto a retirar</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

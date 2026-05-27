@@ -20,7 +20,8 @@ export default async function RetiroPage() {
       balance: true, 
       name: true, 
       referralCode: true,
-      playerId: true
+      playerId: true,
+      welcomeGiftWithdrawn: true
     }
   });
 
@@ -87,6 +88,7 @@ export default async function RetiroPage() {
           referralCode={dbUser?.referralCode || ""}
           referralsCount={referralsCount}
           playerId={dbUser?.playerId || ""}
+          welcomeGiftWithdrawn={dbUser?.welcomeGiftWithdrawn || false}
         />
       </div>
 

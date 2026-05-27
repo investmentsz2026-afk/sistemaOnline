@@ -24,13 +24,15 @@ interface BilleteraTabsProps {
   referralCode: string;
   referralsCount: number;
   playerId: string;
+  welcomeGiftWithdrawn: boolean;
 }
 
 export function BilleteraTabs({ 
   balance, 
   referralCode, 
   referralsCount,
-  playerId 
+  playerId,
+  welcomeGiftWithdrawn
 }: BilleteraTabsProps) {
   const [activeTab, setActiveTab] = useState<"recharge" | "withdraw" | "referrals">("recharge");
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
@@ -204,7 +206,7 @@ export function BilleteraTabs({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              <RetiroOptions balance={balance} />
+              <RetiroOptions balance={balance} welcomeGiftWithdrawn={welcomeGiftWithdrawn} />
             </motion.div>
           )}
 

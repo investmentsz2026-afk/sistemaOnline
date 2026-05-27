@@ -113,9 +113,22 @@ export default function PuzzlePage() {
 
   // Dinámica de nivel (metas)
   const getLevelConfig = (lvl: number) => {
+    let movesLimit = 25;
+    if (lvl === 1) movesLimit = 5;
+    else if (lvl === 2) movesLimit = 8;
+    else if (lvl === 3) movesLimit = 10;
+    else if (lvl === 4) movesLimit = 12;
+    else if (lvl === 5) movesLimit = 14;
+    else if (lvl === 6) movesLimit = 16;
+    else if (lvl === 7) movesLimit = 18;
+    else if (lvl === 8) movesLimit = 20;
+    else if (lvl === 9) movesLimit = 22;
+    else {
+      movesLimit = Math.max(12, 26 - Math.floor(lvl / 3));
+    }
     return {
       scoreGoal: lvl * 1000,
-      movesLimit: Math.max(12, 26 - Math.floor(lvl / 3))
+      movesLimit
     };
   };
 
@@ -557,7 +570,7 @@ export default function PuzzlePage() {
                     <p className="text-slate-500 text-[10px] sm:text-xs mb-3 sm:mb-6">No alcanzaste la meta de {currentLevelConfig.scoreGoal} puntos</p>
 
                     <div className="flex flex-row gap-2 sm:gap-4 w-full max-w-sm justify-center">
-                      {revivesUsed === 0 && (
+                      {revivesUsed < 10 && (
                         <button
                           onClick={watchAdToRevive}
                           className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-4 py-2 sm:px-6 sm:py-3.5 rounded-lg sm:rounded-2xl text-[8px] sm:text-xs uppercase tracking-wider italic transition-all hover:scale-105 shadow-[0_0_20px_rgba(16,185,129,0.3)] flex items-center justify-center gap-1.5"
@@ -582,6 +595,7 @@ export default function PuzzlePage() {
                 <PuzzleGame 
                   level={selectedLevel}
                   movesLimit={currentLevelConfig.movesLimit}
+                  movesLeft={movesLeft}
                   scoreGoal={currentLevelConfig.scoreGoal}
                   activeBooster={activeBooster}
                   onBoosterUsed={() => setActiveBooster(null)}

@@ -50,6 +50,7 @@ model User {
   referredBy          User?     @relation("UserReferrals", fields: [referredById], references: [id])
   referrals           User[]    @relation("UserReferrals")
   claimedLevelRewards String    @default("")
+  welcomeGiftWithdrawn Boolean   @default(false)
 
   auditLogs     AuditLog[]
   withdrawals   Withdrawal[]

@@ -19,10 +19,24 @@ export async function createWithdrawalRequest(data: {
     // 1. Verificar saldo actual
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { balance: true }
+      select: { balance: true, welcomeGiftWithdrawn: true }
     });
 
-    if (!user || user.balance < data.amount) {
+    if (!user) {
+      return { success: false, error: "Usuario no encontrado." };
+    }
+
+    if (data.amount !== 0.02 && data.amount < 5.00) {
+      return { success: false, error: "El monto mínimo de retiro es de $5.00 USD." };
+    }
+
+    if (data.amount === 0.02) {
+      if (user.welcomeGiftWithdrawn) {
+        return { success: false, error: "Ya has retirado tu regalo de bienvenida." };
+      }
+    }
+
+    if (user.balance < data.amount) {
       return { success: false, error: "Saldo insuficiente para este retiro." };
     }
 
@@ -54,7 +68,9 @@ export async function createWithdrawalRequest(data: {
       data: {
         balance: {
           decrement: data.amount
-        }
+        },
+        // Si retira los 0.02 de bienvenida, marcamos la casilla
+        ...(data.amount === 0.02 ? { welcomeGiftWithdrawn: true } : {})
       }
     });
 

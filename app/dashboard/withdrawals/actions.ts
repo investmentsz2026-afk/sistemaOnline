@@ -29,6 +29,17 @@ export async function updateWithdrawalStatus(
       }
     });
 
+    // Si el retiro es rechazado, reembolsamos el dinero al balance del usuario y re-habilitamos el bono si es de $0.02
+    if (status === "REJECTED") {
+      await prisma.user.update({
+        where: { id: withdrawal.userId },
+        data: {
+          balance: { increment: withdrawal.amount },
+          ...(withdrawal.amount === 0.02 ? { welcomeGiftWithdrawn: false } : {})
+        }
+      });
+    }
+
     // Si el retiro es aprobado y es de al menos $5.00, y el usuario fue referido por alguien:
     if (status === "COMPLETED" && withdrawal.amount >= 5.0 && withdrawal.user.referredById) {
       const referrerId = withdrawal.user.referredById;
