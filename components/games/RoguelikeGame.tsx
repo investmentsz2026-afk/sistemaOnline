@@ -26,6 +26,7 @@ export default function RoguelikeGame({
   const parentRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<any>(null);
   const [soundEnabled, setSoundEnabled] = useState(soundSynth.isSoundEnabled());
+  const keysPressedRef = useRef({ up: false, down: false, left: false, right: false, attack: false });
 
   useEffect(() => {
     if (typeof window === "undefined" || !parentRef.current) return;
@@ -157,20 +158,32 @@ export default function RoguelikeGame({
           let vy = 0;
 
           // Leer teclado (flechas o WASD)
-          if (this.wasd.A.isDown || this.cursors?.left?.isDown) {
+          // Leer teclado (flechas o WASD) o virtual
+          const goLeft = this.wasd.A.isDown || this.cursors?.left?.isDown || keysPressedRef.current.left;
+          const goRight = this.wasd.D.isDown || this.cursors?.right?.isDown || keysPressedRef.current.right;
+          const goUp = this.wasd.W.isDown || this.cursors?.up?.isDown || keysPressedRef.current.up;
+          const goDown = this.wasd.S.isDown || this.cursors?.down?.isDown || keysPressedRef.current.down;
+
+          if (goLeft) {
             vx = -speed;
             this.lastFacing = { x: -1, y: 0 };
-          } else if (this.wasd.D.isDown || this.cursors?.right?.isDown) {
+          } else if (goRight) {
             vx = speed;
             this.lastFacing = { x: 1, y: 0 };
           }
 
-          if (this.wasd.W.isDown || this.cursors?.up?.isDown) {
+          if (goUp) {
             vy = -speed;
             this.lastFacing = { x: 0, y: -1 };
-          } else if (this.wasd.S.isDown || this.cursors?.down?.isDown) {
+          } else if (goDown) {
             vy = speed;
             this.lastFacing = { x: 0, y: 1 };
+          }
+
+          // Virtual attack trigger
+          if (keysPressedRef.current.attack) {
+            this.performAttack();
+            keysPressedRef.current.attack = false;
           }
 
           this.player.body.setVelocity(vx, vy);
@@ -716,7 +729,7 @@ export default function RoguelikeGame({
   }, [triggerRestart]);
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center">
+    <div className="relative w-full h-full flex flex-col items-center gap-6">
       <button
         onClick={() => {
           const next = !soundEnabled;
@@ -733,6 +746,66 @@ export default function RoguelikeGame({
         className="w-full max-w-[550px] aspect-[11/8] rounded-3xl overflow-hidden border border-white/10 bg-[#020617] shadow-2xl relative"
         style={{ contentVisibility: "auto" }}
       />
+
+      {/* Controles táctiles en pantalla para móviles */}
+      <div className="flex items-center justify-between w-full max-w-[400px] px-6 py-2 select-none block sm:hidden">
+        {/* D-Pad izquierdo */}
+        <div className="flex flex-col items-center justify-center gap-1 w-[160px]">
+          <button 
+            onTouchStart={() => { keysPressedRef.current.up = true; }}
+            onTouchEnd={() => { keysPressedRef.current.up = false; }}
+            onMouseDown={() => { keysPressedRef.current.up = true; }}
+            onMouseUp={() => { keysPressedRef.current.up = false; }}
+            onMouseLeave={() => { keysPressedRef.current.up = false; }}
+            className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center active:bg-cyan-500/20 active:border-cyan-400 text-white active:text-cyan-300 shadow-md font-bold transition-all text-lg"
+          >
+            ▲
+          </button>
+          <div className="flex justify-between w-full gap-1">
+            <button 
+              onTouchStart={() => { keysPressedRef.current.left = true; }}
+              onTouchEnd={() => { keysPressedRef.current.left = false; }}
+              onMouseDown={() => { keysPressedRef.current.left = true; }}
+              onMouseUp={() => { keysPressedRef.current.left = false; }}
+              onMouseLeave={() => { keysPressedRef.current.left = false; }}
+              className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center active:bg-cyan-500/20 active:border-cyan-400 text-white active:text-cyan-300 shadow-md font-bold transition-all text-lg"
+            >
+              ◀
+            </button>
+            <button 
+              onTouchStart={() => { keysPressedRef.current.down = true; }}
+              onTouchEnd={() => { keysPressedRef.current.down = false; }}
+              onMouseDown={() => { keysPressedRef.current.down = true; }}
+              onMouseUp={() => { keysPressedRef.current.down = false; }}
+              onMouseLeave={() => { keysPressedRef.current.down = false; }}
+              className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center active:bg-cyan-500/20 active:border-cyan-400 text-white active:text-cyan-300 shadow-md font-bold transition-all text-lg"
+            >
+              ▼
+            </button>
+            <button 
+              onTouchStart={() => { keysPressedRef.current.right = true; }}
+              onTouchEnd={() => { keysPressedRef.current.right = false; }}
+              onMouseDown={() => { keysPressedRef.current.right = true; }}
+              onMouseUp={() => { keysPressedRef.current.right = false; }}
+              onMouseLeave={() => { keysPressedRef.current.right = false; }}
+              className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center active:bg-cyan-500/20 active:border-cyan-400 text-white active:text-cyan-300 shadow-md font-bold transition-all text-lg"
+            >
+              ▶
+            </button>
+          </div>
+        </div>
+
+        {/* Botón de ataque derecho */}
+        <button
+          onTouchStart={() => { keysPressedRef.current.attack = true; }}
+          onTouchEnd={() => { keysPressedRef.current.attack = false; }}
+          onMouseDown={() => { keysPressedRef.current.attack = true; }}
+          onMouseUp={() => { keysPressedRef.current.attack = false; }}
+          className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center active:scale-95 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.4)] border border-cyan-300 text-xs tracking-wider uppercase transition-all select-none"
+        >
+          ATK
+        </button>
+      </div>
     </div>
   );
 }

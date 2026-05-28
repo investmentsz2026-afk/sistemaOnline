@@ -141,7 +141,7 @@ export async function getGameProgress(gameId: "runner" | "puzzle" | "labyrinth" 
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { claimedLevelRewards: true }
+      select: { claimedLevelRewards: true, balance: true, points: true }
     });
 
     const claimedList = user?.claimedLevelRewards
@@ -159,7 +159,9 @@ export async function getGameProgress(gameId: "runner" | "puzzle" | "labyrinth" 
       missions: missionsWithProgress,
       rankings,
       userLevel: progress.level || 1,
-      claimedLevelRewards: claimedLevelsForThisGame.join(",")
+      claimedLevelRewards: claimedLevelsForThisGame.join(","),
+      userBalance: user?.balance || 0,
+      userPoints: user?.points || 0
     };
   } catch (error) {
     console.error("Error al obtener progreso de juego:", error);

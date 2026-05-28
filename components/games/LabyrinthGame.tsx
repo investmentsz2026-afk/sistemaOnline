@@ -30,6 +30,7 @@ export default function LabyrinthGame({
   const parentRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<any>(null);
   const [soundEnabled, setSoundEnabled] = useState(soundSynth.isSoundEnabled());
+  const keysPressedRef = useRef({ up: false, down: false, left: false, right: false });
 
   useEffect(() => {
     if (typeof window === "undefined" || !parentRef.current) return;
@@ -157,18 +158,21 @@ export default function LabyrinthGame({
           const speed = 160;
           this.player.body.setVelocity(0);
 
-          if (this.cursors) {
-            if (this.cursors.left?.isDown) {
-              this.player.body.setVelocityX(-speed);
-            } else if (this.cursors.right?.isDown) {
-              this.player.body.setVelocityX(speed);
-            }
+          const goLeft = (this.cursors?.left?.isDown) || keysPressedRef.current.left;
+          const goRight = (this.cursors?.right?.isDown) || keysPressedRef.current.right;
+          const goUp = (this.cursors?.up?.isDown) || keysPressedRef.current.up;
+          const goDown = (this.cursors?.down?.isDown) || keysPressedRef.current.down;
 
-            if (this.cursors.up?.isDown) {
-              this.player.body.setVelocityY(-speed);
-            } else if (this.cursors.down?.isDown) {
-              this.player.body.setVelocityY(speed);
-            }
+          if (goLeft) {
+            this.player.body.setVelocityX(-speed);
+          } else if (goRight) {
+            this.player.body.setVelocityX(speed);
+          }
+
+          if (goUp) {
+            this.player.body.setVelocityY(-speed);
+          } else if (goDown) {
+            this.player.body.setVelocityY(speed);
           }
 
           // Verificar si recoge la llave
@@ -988,7 +992,7 @@ export default function LabyrinthGame({
   }, [triggerRevive]);
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center">
+    <div className="relative w-full h-full flex flex-col items-center gap-6">
       <button
         onClick={() => {
           const next = !soundEnabled;
@@ -1005,6 +1009,54 @@ export default function LabyrinthGame({
         className="w-full max-w-[420px] sm:max-w-[480px] aspect-square rounded-3xl overflow-hidden border border-white/10 bg-[#020617] shadow-2xl relative"
         style={{ contentVisibility: "auto" }}
       />
+
+      {/* D-Pad táctil para móvil */}
+      <div className="flex flex-col items-center justify-center gap-2 mt-2 w-full max-w-[200px] select-none block sm:hidden">
+         {/* Botón arriba */}
+         <button 
+           onTouchStart={() => { keysPressedRef.current.up = true; }}
+           onTouchEnd={() => { keysPressedRef.current.up = false; }}
+           onMouseDown={() => { keysPressedRef.current.up = true; }}
+           onMouseUp={() => { keysPressedRef.current.up = false; }}
+           onMouseLeave={() => { keysPressedRef.current.up = false; }}
+           className="w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center active:bg-cyan-500/20 active:border-cyan-400 text-white active:text-cyan-300 shadow-md font-bold transition-all text-xl"
+         >
+           ▲
+         </button>
+         {/* Botones izquierda, abajo, derecha */}
+         <div className="flex justify-between w-full gap-2">
+           <button 
+             onTouchStart={() => { keysPressedRef.current.left = true; }}
+             onTouchEnd={() => { keysPressedRef.current.left = false; }}
+             onMouseDown={() => { keysPressedRef.current.left = true; }}
+             onMouseUp={() => { keysPressedRef.current.left = false; }}
+             onMouseLeave={() => { keysPressedRef.current.left = false; }}
+             className="w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center active:bg-cyan-500/20 active:border-cyan-400 text-white active:text-cyan-300 shadow-md font-bold transition-all text-xl"
+           >
+             ◀
+           </button>
+           <button 
+             onTouchStart={() => { keysPressedRef.current.down = true; }}
+             onTouchEnd={() => { keysPressedRef.current.down = false; }}
+             onMouseDown={() => { keysPressedRef.current.down = true; }}
+             onMouseUp={() => { keysPressedRef.current.down = false; }}
+             onMouseLeave={() => { keysPressedRef.current.down = false; }}
+             className="w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center active:bg-cyan-500/20 active:border-cyan-400 text-white active:text-cyan-300 shadow-md font-bold transition-all text-xl"
+           >
+             ▼
+           </button>
+           <button 
+             onTouchStart={() => { keysPressedRef.current.right = true; }}
+             onTouchEnd={() => { keysPressedRef.current.right = false; }}
+             onMouseDown={() => { keysPressedRef.current.right = true; }}
+             onMouseUp={() => { keysPressedRef.current.right = false; }}
+             onMouseLeave={() => { keysPressedRef.current.right = false; }}
+             className="w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center active:bg-cyan-500/20 active:border-cyan-400 text-white active:text-cyan-300 shadow-md font-bold transition-all text-xl"
+           >
+             ▶
+           </button>
+         </div>
+      </div>
     </div>
   );
 }

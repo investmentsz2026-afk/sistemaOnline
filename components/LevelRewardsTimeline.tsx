@@ -11,12 +11,14 @@ interface LevelRewardsTimelineProps {
   gameId: string;
   userLevel: number;
   initialClaimedLevelRewards: string;
+  onRewardClaimed?: () => void;
 }
 
 export function LevelRewardsTimeline({ 
   gameId,
   userLevel, 
-  initialClaimedLevelRewards 
+  initialClaimedLevelRewards,
+  onRewardClaimed
 }: LevelRewardsTimelineProps) {
   const [claimingLevel, setClaimingLevel] = useState<number | null>(null);
   const [claimedLevels, setClaimedLevels] = useState<string[]>(
@@ -34,6 +36,7 @@ export function LevelRewardsTimeline({
       if (res.success) {
         toast.success(`¡Bono reclamado! +$${res.rewardAmount?.toFixed(2)} acreditados a tu balance.`);
         setClaimedLevels(prev => [...prev, lvl.toString()]);
+        if (onRewardClaimed) onRewardClaimed();
       } else {
         toast.error(res.error || "No se pudo reclamar.");
       }

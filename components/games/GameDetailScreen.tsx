@@ -14,6 +14,7 @@ interface GameDetailScreenProps {
   claimedLevelRewards: string;
   thumbUrl: string;
   onPlay: () => void;
+  onRewardClaimed?: () => void;
 }
 
 export function GameDetailScreen({
@@ -24,7 +25,8 @@ export function GameDetailScreen({
   userLevel,
   claimedLevelRewards,
   thumbUrl,
-  onPlay
+  onPlay,
+  onRewardClaimed
 }: GameDetailScreenProps) {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8 pb-32">
@@ -123,6 +125,7 @@ export function GameDetailScreen({
           gameId={gameId}
           userLevel={userLevel} 
           initialClaimedLevelRewards={claimedLevelRewards} 
+          onRewardClaimed={onRewardClaimed}
         />
       </div>
     </div>

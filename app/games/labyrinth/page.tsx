@@ -6,7 +6,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ChevronLeft, Trophy, Coins, Lock, Check, ShoppingBag, 
-  Sparkles, ListTodo, Star, Play, AlertCircle, Eye, Snowflake, Clock, Compass
+  Sparkles, ListTodo, Star, Play, AlertCircle, Eye, Snowflake, Clock, Compass, DollarSign
 } from "lucide-react";
 import { toast } from "sonner";
 import { GameDetailScreen } from "@/components/games/GameDetailScreen";
@@ -59,6 +59,8 @@ export default function LabyrinthPage() {
   const [userLevel, setUserLevel] = useState<number>(1);
   const [claimedLevelRewards, setClaimedLevelRewards] = useState<string>("");
   const [showPreGame, setShowPreGame] = useState<boolean>(true);
+  const [userBalance, setUserBalance] = useState<number>(0);
+  const [userPoints, setUserPoints] = useState<number>(0);
 
   // Gameplay State
   const [selectedLevel, setSelectedLevel] = useState(1);
@@ -99,6 +101,8 @@ export default function LabyrinthPage() {
           setRankings(res.rankings || []);
           setUserLevel(res.userLevel || 1);
           setClaimedLevelRewards(res.claimedLevelRewards || "");
+          setUserBalance(res.userBalance || 0);
+          setUserPoints(res.userPoints || 0);
         }
       }
     } catch (e) {
@@ -287,6 +291,7 @@ export default function LabyrinthPage() {
           claimedLevelRewards={claimedLevelRewards}
           thumbUrl="https://img.gamemonetize.com/747v6poddba7w1b1n39dihdf6tmz34gn/512x384.jpg"
           onPlay={() => setShowPreGame(false)}
+          onRewardClaimed={loadProgress}
         />
       </div>
     );
@@ -333,6 +338,15 @@ export default function LabyrinthPage() {
               <div className="text-left">
                 <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block">Máximo</span>
                 <span className="text-sm font-black text-cyan-400 italic tracking-tighter tabular-nums">{progress.highScore} Pts</span>
+              </div>
+            </div>
+
+            {/* Saldo USD */}
+            <div className="flex items-center gap-2 pl-4 border-l border-white/5">
+              <DollarSign className="w-5 h-5 text-emerald-400" />
+              <div className="text-left">
+                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest block">Saldo</span>
+                <span className="text-sm font-black text-white italic tracking-tighter tabular-nums">${userBalance.toFixed(2)} USD</span>
               </div>
             </div>
 
