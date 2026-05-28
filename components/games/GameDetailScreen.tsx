@@ -6,6 +6,7 @@ import { LevelRewardsTimeline } from "@/components/LevelRewardsTimeline";
 import { motion } from "framer-motion";
 
 interface GameDetailScreenProps {
+  gameId: string;
   title: string;
   category: string;
   desc: string;
@@ -16,6 +17,7 @@ interface GameDetailScreenProps {
 }
 
 export function GameDetailScreen({
+  gameId,
   title,
   category,
   desc,
@@ -118,6 +120,7 @@ export function GameDetailScreen({
 
         {/* Renderizado de la línea de tiempo de recompensas */}
         <LevelRewardsTimeline 
+          gameId={gameId}
           userLevel={userLevel} 
           initialClaimedLevelRewards={claimedLevelRewards} 
         />

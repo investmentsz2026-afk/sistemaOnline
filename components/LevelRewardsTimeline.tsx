@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Award, Coins, CheckCircle2 } from "lucide-react";
 import { claimLevelReward } from "@/app/games/actions";
 import { LEVEL_REWARDS } from "@/app/games/constants";
@@ -8,11 +8,13 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 interface LevelRewardsTimelineProps {
+  gameId: string;
   userLevel: number;
   initialClaimedLevelRewards: string;
 }
 
 export function LevelRewardsTimeline({ 
+  gameId,
   userLevel, 
   initialClaimedLevelRewards 
 }: LevelRewardsTimelineProps) {
@@ -21,10 +23,14 @@ export function LevelRewardsTimeline({
     initialClaimedLevelRewards ? initialClaimedLevelRewards.split(",").map(c => c.trim()) : []
   );
 
+  useEffect(() => {
+    setClaimedLevels(initialClaimedLevelRewards ? initialClaimedLevelRewards.split(",").map(c => c.trim()) : []);
+  }, [initialClaimedLevelRewards]);
+
   const handleClaimLevel = async (lvl: number) => {
     setClaimingLevel(lvl);
     try {
-      const res = await claimLevelReward(lvl);
+      const res = await claimLevelReward(gameId, lvl);
       if (res.success) {
         toast.success(`¡Bono reclamado! +$${res.rewardAmount?.toFixed(2)} acreditados a tu balance.`);
         setClaimedLevels(prev => [...prev, lvl.toString()]);

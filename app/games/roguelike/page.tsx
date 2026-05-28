@@ -284,6 +284,7 @@ export default function RoguelikePage() {
     return (
       <div className="relative z-10 pt-8 pb-20 px-4 md:px-8 max-w-7xl mx-auto flex flex-col min-h-screen bg-[#020617] text-white">
         <GameDetailScreen
+          gameId="roguelike"
           title="Mini Roguelike"
           category="Procedural Dungeon"
           desc="Combate criaturas con espada en mano, recoge tesoros, compra mejoras en el herrero y desciende pisos."

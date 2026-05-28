@@ -57,6 +57,12 @@ export default async function RecompensasPage() {
     }
   });
 
+  // Traemos los progresos de juegos del usuario
+  const gameProgresses = await (prisma as any).gameProgress.findMany({
+    where: { userId: session.user.id },
+    select: { gameId: true, level: true }
+  });
+
   // Contar cantidad de referidos del usuario
   const referralsCount = await prisma.user.count({
     where: { referredById: session.user.id }
@@ -80,6 +86,7 @@ export default async function RecompensasPage() {
           referralCode={currentUser?.referralCode || ""}
           claimedLevelRewards={currentUser?.claimedLevelRewards || ""}
           referralsCount={referralsCount}
+          gameProgresses={gameProgresses}
         />
       </div>
 

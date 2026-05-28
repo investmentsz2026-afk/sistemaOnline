@@ -385,6 +385,7 @@ export default function PuzzlePage() {
     return (
       <div className="relative z-10 pt-8 pb-20 px-4 md:px-8 max-w-7xl mx-auto flex flex-col min-h-screen">
         <GameDetailScreen
+          gameId="puzzle"
           title="Match-3 Puzzle"
           category="Match-3 Saga"
           desc="Supera más de 100 niveles desafiantes. Consigue combos masivos y compra boosters especiales para estallar el tablero."

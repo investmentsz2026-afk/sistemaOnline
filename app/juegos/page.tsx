@@ -67,10 +67,10 @@ export default async function JuegosPage() {
           </div>
         </div>
 
-        <GameClient initialGames={games} />
+        {/* <GameClient initialGames={games} /> */}
 
         {/* NUEVA SECCIÓN DE JUEGOS PREMIUM HTML5 (DESARROLLADOS CON PHASER 3) */}
-        <div className="border-t border-white/5 pt-16 mt-20 space-y-8">
+        <div className="space-y-8">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               <div className="w-2.5 h-2.5 bg-cyan-500 rounded-full animate-pulse"></div>

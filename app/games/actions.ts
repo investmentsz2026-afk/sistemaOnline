@@ -141,8 +141,16 @@ export async function getGameProgress(gameId: "runner" | "puzzle" | "labyrinth" 
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { level: true, claimedLevelRewards: true }
+      select: { claimedLevelRewards: true }
     });
+
+    const claimedList = user?.claimedLevelRewards
+      ? user.claimedLevelRewards.split(",").map(c => c.trim())
+      : [];
+
+    const claimedLevelsForThisGame = claimedList
+      .filter(item => item.startsWith(`${gameId}:`))
+      .map(item => item.split(":")[1]);
 
     return {
       success: true,
@@ -150,8 +158,8 @@ export async function getGameProgress(gameId: "runner" | "puzzle" | "labyrinth" 
       progress,
       missions: missionsWithProgress,
       rankings,
-      userLevel: user?.level || 1,
-      claimedLevelRewards: user?.claimedLevelRewards || ""
+      userLevel: progress.level || 1,
+      claimedLevelRewards: claimedLevelsForThisGame.join(",")
     };
   } catch (error) {
     console.error("Error al obtener progreso de juego:", error);
@@ -583,9 +591,9 @@ export async function selectSkin(gameId: "runner" | "puzzle" | "labyrinth" | "ju
 // Escalera de recompensas en dólares por nivel global se importa desde constants.ts
 
 /**
- * Reclamar la recompensa en dólares al subir de nivel global.
+ * Reclamar la recompensa en dólares al subir de nivel en un juego específico.
  */
-export async function claimLevelReward(targetLevel: number) {
+export async function claimLevelReward(gameId: string, targetLevel: number) {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "No autorizado" };
 
@@ -597,25 +605,40 @@ export async function claimLevelReward(targetLevel: number) {
   }
 
   try {
+    // 1. Obtener progreso de nivel para el juego específico
+    const progress = await (prisma as any).gameProgress.findUnique({
+      where: { userId_gameId: { userId, gameId } }
+    });
+
+    const gameLevel = progress ? progress.level : 1;
+    if (gameLevel < targetLevel) {
+      const gameNames: Record<string, string> = {
+        runner: "Cyber Runner",
+        puzzle: "Match-3 Puzzle",
+        labyrinth: "Escape Labyrinth",
+        jump: "Impossible Jump",
+        roguelike: "Mini Roguelike"
+      };
+      return { success: false, error: `Aún no has alcanzado el nivel ${targetLevel} en ${gameNames[gameId] || gameId} (Nivel actual: ${gameLevel})` };
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { level: true, claimedLevelRewards: true }
+      select: { claimedLevelRewards: true }
     });
 
     if (!user) return { success: false, error: "Usuario no encontrado" };
-    if (user.level < targetLevel) {
-      return { success: false, error: `Aún no has alcanzado el nivel ${targetLevel} (Nivel actual: ${user.level})` };
-    }
 
     const claimedArray = user.claimedLevelRewards
       ? user.claimedLevelRewards.split(",").map(c => c.trim())
       : [];
 
-    if (claimedArray.includes(targetLevel.toString())) {
-      return { success: false, error: `Ya has reclamado la recompensa del nivel ${targetLevel}` };
+    const claimKey = `${gameId}:${targetLevel}`;
+    if (claimedArray.includes(claimKey)) {
+      return { success: false, error: `Ya has reclamado la recompensa del nivel ${targetLevel} en este juego` };
     }
 
-    claimedArray.push(targetLevel.toString());
+    claimedArray.push(claimKey);
     const updatedClaimed = claimedArray.filter(Boolean).join(",");
 
     await prisma.$transaction([
@@ -630,7 +653,7 @@ export async function claimLevelReward(targetLevel: number) {
         data: {
           userId,
           action: "CLAIMED_LEVEL_REWARD",
-          description: `Reclamó recompensa de nivel global ${targetLevel}: +$${rewardAmount.toFixed(2)} USD`
+          description: `Reclamó recompensa de nivel ${targetLevel} en juego ${gameId}: +$${rewardAmount.toFixed(2)} USD`
         }
       })
     ]);

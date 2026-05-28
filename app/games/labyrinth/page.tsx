@@ -279,6 +279,7 @@ export default function LabyrinthPage() {
     return (
       <div className="relative z-10 pt-8 pb-20 px-4 md:px-8 max-w-7xl mx-auto flex flex-col min-h-screen bg-[#020617] text-white">
         <GameDetailScreen
+          gameId="labyrinth"
           title="Escape Labyrinth"
           category="Cyber Labyrinth"
           desc="Escapa de laberintos en la oscuridad, esquiva centinelas láser y compra mapas reveladores o criogenizadores."

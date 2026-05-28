@@ -378,6 +378,7 @@ export default function RunnerPage() {
     return (
       <div className="relative z-10 pt-8 pb-20 px-4 md:px-8 max-w-7xl mx-auto flex flex-col min-h-screen">
         <GameDetailScreen
+          gameId="runner"
           title="Cyber Runner"
           category="Endless Runner"
           desc="Esquiva obstáculos a máxima velocidad, activa escudos, imanes de monedas y jetpacks para batir récords globales."

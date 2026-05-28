@@ -48,6 +48,11 @@ interface LeaderboardUser {
   wins: number;
 }
 
+interface GameProgressItem {
+  gameId: string;
+  level: number;
+}
+
 interface RewardsClientProps {
   users: LeaderboardUser[];
   currentUserId: string;
@@ -60,6 +65,7 @@ interface RewardsClientProps {
   referralCode?: string;
   claimedLevelRewards?: string;
   referralsCount?: number;
+  gameProgresses?: GameProgressItem[];
 }
 
 export const RewardsClient = ({ 
@@ -73,17 +79,27 @@ export const RewardsClient = ({
   userGems = 0,
   referralCode = "",
   claimedLevelRewards = "",
-  referralsCount = 0
+  referralsCount = 0,
+  gameProgresses = []
 }: RewardsClientProps) => {
   const [activeTab, setActiveTab] = useState<"misiones" | "adgem" | "level_rewards" | "referidos" | "bonos" | null>("level_rewards");
+  const [selectedGameId, setSelectedGameId] = useState<string>("puzzle");
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, mins: 0, secs: 0 });
   const [copied, setCopied] = useState(false);
   const searchParams = useSearchParams();
   const [loadingMission, setLoadingMission] = useState<string | null>(null);
-  const [claimingLevel, setClaimingLevel] = useState<number | null>(null);
-  const [claimedLevels, setClaimedLevels] = useState<string[]>(
-    claimedLevelRewards ? claimedLevelRewards.split(",").map(c => c.trim()) : []
-  );
+
+  const selectedGameProgress = gameProgresses.find(gp => gp.gameId === selectedGameId);
+  const gameLevel = selectedGameProgress ? selectedGameProgress.level : 1;
+
+  const claimedList = claimedLevelRewards
+    ? claimedLevelRewards.split(",").map(c => c.trim())
+    : [];
+
+  const gameClaimedLevels = claimedList
+    .filter(item => item.startsWith(`${selectedGameId}:`))
+    .map(item => item.split(":")[1])
+    .join(",");
 
   const isAdminOrMod = userRole === "ADMIN" || userRole === "MODERATOR";
 
@@ -123,23 +139,6 @@ export const RewardsClient = ({
       toast.error(result.error);
     }
     setLoadingMission(null);
-  };
-
-  const handleClaimLevel = async (lvl: number) => {
-    setClaimingLevel(lvl);
-    try {
-      const res = await claimLevelReward(lvl);
-      if (res.success) {
-        toast.success(`¡Bono reclamado! +$${res.rewardAmount?.toFixed(2)} acreditados a tu balance.`);
-        setClaimedLevels(prev => [...prev, lvl.toString()]);
-      } else {
-        toast.error(res.error || "No se pudo reclamar.");
-      }
-    } catch (e) {
-      toast.error("Error de conexión.");
-    } finally {
-      setClaimingLevel(null);
-    }
   };
 
   const handleAddFriend = async (playerId: string) => {
@@ -429,10 +428,42 @@ export const RewardsClient = ({
               
               {/* TAB PREMIOS POR NIVEL */}
               {activeTab === "level_rewards" && (
-                <LevelRewardsTimeline 
-                  userLevel={userLevel} 
-                  initialClaimedLevelRewards={claimedLevelRewards} 
-                />
+                <div className="space-y-6">
+                  {/* Selector de Juego */}
+                  <div className="bg-[#0b0e14]/60 border border-white/10 p-6 rounded-3xl backdrop-blur-md">
+                    <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block mb-4">
+                      Selecciona un juego para ver tus premios
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                      {[
+                        { id: "puzzle", label: "Puzzle Match-3" },
+                        { id: "runner", label: "Cyber Runner" },
+                        { id: "labyrinth", label: "Labyrinth" },
+                        { id: "jump", label: "Impossible Jump" },
+                        { id: "roguelike", label: "Roguelike" }
+                      ].map(game => (
+                        <button
+                          key={game.id}
+                          onClick={() => setSelectedGameId(game.id)}
+                          className={cn(
+                            "py-2.5 px-3 rounded-2xl border text-[10px] font-black uppercase tracking-wider transition-all hover:scale-[1.03]",
+                            selectedGameId === game.id
+                              ? "bg-cyan-500/20 border-cyan-400 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.15)]"
+                              : "bg-white/5 border-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+                          )}
+                        >
+                          {game.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <LevelRewardsTimeline 
+                    gameId={selectedGameId}
+                    userLevel={gameLevel} 
+                    initialClaimedLevelRewards={gameClaimedLevels} 
+                  />
+                </div>
               )}
 
               {/* TAB INVITAR AMIGOS */}

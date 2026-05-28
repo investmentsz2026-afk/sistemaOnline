@@ -281,6 +281,7 @@ export default function JumpPage() {
     return (
       <div className="relative z-10 pt-8 pb-20 px-4 md:px-8 max-w-7xl mx-auto flex flex-col min-h-screen bg-[#020617] text-white">
         <GameDetailScreen
+          gameId="jump"
           title="Impossible Jump"
           category="Hardcore Jump"
           desc="Sincroniza tus saltos contra trampas de lava y picos en este desafiante platformer con gravedad invertida."
