@@ -382,7 +382,7 @@ export default function RoguelikePage() {
             </div>
 
             {/* Canvas wrapper (custom dimension matching RoguelikeGame aspect ratio) */}
-            <div className="relative w-full max-w-[550px] aspect-[11/8] overflow-hidden bg-[#020617] rounded-3xl flex items-center justify-center">
+            <div className="relative w-full max-w-[750px] aspect-[11/8] overflow-hidden bg-[#020617] rounded-3xl flex items-center justify-center">
               
               {!gameActive && !levelSuccess && !levelFailed && (
                 <div className="absolute inset-0 z-20 flex flex-col items-center bg-slate-950/95 backdrop-blur-md p-6 overflow-y-auto">

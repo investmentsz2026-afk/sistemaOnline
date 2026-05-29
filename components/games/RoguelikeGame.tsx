@@ -117,11 +117,9 @@ export default function RoguelikeGame({
           }
 
           this.input.on("pointerdown", (pointer: Phaser.Input.Pointer) => {
-            // Si hace clic en la mitad inferior derecha, simular botón de ataque en móviles
-            if (pointer.x > VIEW_WIDTH - 100 && pointer.y > VIEW_HEIGHT - 100) {
-              this.performAttack();
-            } else {
-              // De lo contrario mover el personaje o atacar en esa dirección
+            // Si hace clic cerca del botón virtual de ataque, atacar
+            const isNearAtk = Phaser.Math.Distance.Between(pointer.x, pointer.y, VIEW_WIDTH - 65, VIEW_HEIGHT - 65) < 60;
+            if (isNearAtk) {
               this.performAttack();
             }
           }, this);
@@ -159,10 +157,10 @@ export default function RoguelikeGame({
 
           // Leer teclado (flechas o WASD)
           // Leer teclado (flechas o WASD) o virtual
-          const goLeft = this.wasd.A.isDown || this.cursors?.left?.isDown || keysPressedRef.current.left;
-          const goRight = this.wasd.D.isDown || this.cursors?.right?.isDown || keysPressedRef.current.right;
-          const goUp = this.wasd.W.isDown || this.cursors?.up?.isDown || keysPressedRef.current.up;
-          const goDown = this.wasd.S.isDown || this.cursors?.down?.isDown || keysPressedRef.current.down;
+          const goLeft = this.wasd?.A?.isDown || this.cursors?.left?.isDown || keysPressedRef.current.left;
+          const goRight = this.wasd?.D?.isDown || this.cursors?.right?.isDown || keysPressedRef.current.right;
+          const goUp = this.wasd?.W?.isDown || this.cursors?.up?.isDown || keysPressedRef.current.up;
+          const goDown = this.wasd?.S?.isDown || this.cursors?.down?.isDown || keysPressedRef.current.down;
 
           if (goLeft) {
             vx = -speed;
@@ -178,6 +176,29 @@ export default function RoguelikeGame({
           } else if (goDown) {
             vy = speed;
             this.lastFacing = { x: 0, y: 1 };
+          }
+
+          // Movimiento táctil en pantalla: mover hacia la posición del puntero
+          const pointer = this.input.activePointer;
+          if (pointer && pointer.isDown && !goLeft && !goRight && !goUp && !goDown) {
+            const isNearAtk = Phaser.Math.Distance.Between(pointer.x, pointer.y, VIEW_WIDTH - 65, VIEW_HEIGHT - 65) < 60;
+            if (!isNearAtk) {
+              const dx = pointer.worldX - this.player.x;
+              const dy = pointer.worldY - this.player.y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+              if (dist > 15) {
+                const angle = Math.atan2(dy, dx);
+                vx = Math.cos(angle) * speed;
+                vy = Math.sin(angle) * speed;
+                
+                // Actualizar dirección de la espada
+                if (Math.abs(dx) > Math.abs(dy)) {
+                  this.lastFacing = { x: dx > 0 ? 1 : -1, y: 0 };
+                } else {
+                  this.lastFacing = { x: 0, y: dy > 0 ? 1 : -1 };
+                }
+              }
+            }
           }
 
           // Virtual attack trigger
@@ -538,16 +559,16 @@ export default function RoguelikeGame({
           joy.setScrollFactor(0);
           joy.setDepth(190);
           
-          // Botón de ataque en la esquina inferior derecha
-          joy.fillStyle(0x00ffcc, 0.25);
-          joy.fillCircle(VIEW_WIDTH - 60, VIEW_HEIGHT - 60, 32);
-          joy.lineStyle(2, 0x00ffcc, 0.6);
-          joy.strokeCircle(VIEW_WIDTH - 60, VIEW_HEIGHT - 60, 32);
+          // Botón de ataque en la esquina inferior derecha (más grande y nítido para móviles)
+          joy.fillStyle(0x00ffcc, 0.3);
+          joy.fillCircle(VIEW_WIDTH - 65, VIEW_HEIGHT - 65, 40);
+          joy.lineStyle(2, 0x00ffcc, 0.8);
+          joy.strokeCircle(VIEW_WIDTH - 65, VIEW_HEIGHT - 65, 40);
           
           // Dibujar espada dentro del botón de ataque
-          this.add.text(VIEW_WIDTH - 60, VIEW_HEIGHT - 60, "ATK", {
+          this.add.text(VIEW_WIDTH - 65, VIEW_HEIGHT - 65, "ATK", {
             fontFamily: "sans-serif",
-            fontSize: "11px",
+            fontSize: "14px",
             fontStyle: "bold",
             color: "#ffffff"
           }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
@@ -729,7 +750,7 @@ export default function RoguelikeGame({
   }, [triggerRestart]);
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center gap-6">
+    <div className="relative w-full h-full">
       <button
         onClick={() => {
           const next = !soundEnabled;
@@ -743,69 +764,9 @@ export default function RoguelikeGame({
 
       <div
         ref={parentRef}
-        className="w-full max-w-[550px] aspect-[11/8] rounded-3xl overflow-hidden border border-white/10 bg-[#020617] shadow-2xl relative"
+        className="w-full h-full rounded-3xl overflow-hidden border border-white/10 bg-[#020617] shadow-2xl relative"
         style={{ contentVisibility: "auto" }}
       />
-
-      {/* Controles táctiles en pantalla para móviles */}
-      <div className="flex items-center justify-between w-full max-w-[400px] px-6 py-2 select-none block sm:hidden">
-        {/* D-Pad izquierdo */}
-        <div className="flex flex-col items-center justify-center gap-1 w-[160px]">
-          <button 
-            onTouchStart={() => { keysPressedRef.current.up = true; }}
-            onTouchEnd={() => { keysPressedRef.current.up = false; }}
-            onMouseDown={() => { keysPressedRef.current.up = true; }}
-            onMouseUp={() => { keysPressedRef.current.up = false; }}
-            onMouseLeave={() => { keysPressedRef.current.up = false; }}
-            className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center active:bg-cyan-500/20 active:border-cyan-400 text-white active:text-cyan-300 shadow-md font-bold transition-all text-lg"
-          >
-            ▲
-          </button>
-          <div className="flex justify-between w-full gap-1">
-            <button 
-              onTouchStart={() => { keysPressedRef.current.left = true; }}
-              onTouchEnd={() => { keysPressedRef.current.left = false; }}
-              onMouseDown={() => { keysPressedRef.current.left = true; }}
-              onMouseUp={() => { keysPressedRef.current.left = false; }}
-              onMouseLeave={() => { keysPressedRef.current.left = false; }}
-              className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center active:bg-cyan-500/20 active:border-cyan-400 text-white active:text-cyan-300 shadow-md font-bold transition-all text-lg"
-            >
-              ◀
-            </button>
-            <button 
-              onTouchStart={() => { keysPressedRef.current.down = true; }}
-              onTouchEnd={() => { keysPressedRef.current.down = false; }}
-              onMouseDown={() => { keysPressedRef.current.down = true; }}
-              onMouseUp={() => { keysPressedRef.current.down = false; }}
-              onMouseLeave={() => { keysPressedRef.current.down = false; }}
-              className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center active:bg-cyan-500/20 active:border-cyan-400 text-white active:text-cyan-300 shadow-md font-bold transition-all text-lg"
-            >
-              ▼
-            </button>
-            <button 
-              onTouchStart={() => { keysPressedRef.current.right = true; }}
-              onTouchEnd={() => { keysPressedRef.current.right = false; }}
-              onMouseDown={() => { keysPressedRef.current.right = true; }}
-              onMouseUp={() => { keysPressedRef.current.right = false; }}
-              onMouseLeave={() => { keysPressedRef.current.right = false; }}
-              className="w-12 h-12 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center active:bg-cyan-500/20 active:border-cyan-400 text-white active:text-cyan-300 shadow-md font-bold transition-all text-lg"
-            >
-              ▶
-            </button>
-          </div>
-        </div>
-
-        {/* Botón de ataque derecho */}
-        <button
-          onTouchStart={() => { keysPressedRef.current.attack = true; }}
-          onTouchEnd={() => { keysPressedRef.current.attack = false; }}
-          onMouseDown={() => { keysPressedRef.current.attack = true; }}
-          onMouseUp={() => { keysPressedRef.current.attack = false; }}
-          className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center active:scale-95 text-slate-950 font-black shadow-[0_0_15px_rgba(6,182,212,0.4)] border border-cyan-300 text-xs tracking-wider uppercase transition-all select-none"
-        >
-          ATK
-        </button>
-      </div>
     </div>
   );
 }
