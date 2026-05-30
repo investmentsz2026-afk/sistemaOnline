@@ -21,13 +21,15 @@ import { cn } from "@/lib/utils";
 interface OffersClientProps {
   initialPoints: number;
   initialBalance: number;
+  watchedAdsToday?: Record<string, boolean>;
 }
 
-export const OffersClient = ({ initialPoints, initialBalance }: OffersClientProps) => {
+export const OffersClient = ({ initialPoints, initialBalance, watchedAdsToday }: OffersClientProps) => {
   const [points, setPoints] = useState(initialPoints);
   const [balance, setBalance] = useState(initialBalance);
   const [activeTab, setActiveTab] = useState<"EARN" | "REDEEM">("EARN");
   const [loadingOffer, setLoadingOffer] = useState<string | null>(null);
+  const [watchedToday, setWatchedToday] = useState<Record<string, boolean>>(watchedAdsToday || {});
   const [showStatusModal, setShowStatusModal] = useState<{ show: boolean, type: "SUCCESS" | "ERROR", title: string, message: string }>({
     show: false,
     type: "SUCCESS",
@@ -54,6 +56,7 @@ export const OffersClient = ({ initialPoints, initialBalance }: OffersClientProp
     if (result.success) {
       toast.success(`+${opt.pts} Puntos acreditados!`);
       setPoints(prev => prev + opt.pts);
+      setWatchedToday(prev => ({ ...prev, [opt.id]: true }));
     } else {
       toast.error(result.error);
     }
@@ -190,10 +193,15 @@ export const OffersClient = ({ initialPoints, initialBalance }: OffersClientProp
                   
                   <button 
                     onClick={() => handleEarn(opt)}
-                    disabled={loadingOffer !== null}
-                    className="w-full bg-white text-slate-950 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-cyan-400 transition-all active:scale-95 disabled:opacity-50"
+                    disabled={loadingOffer !== null || watchedToday[opt.id]}
+                    className={cn(
+                      "w-full py-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all select-none active:scale-95 disabled:opacity-50",
+                      watchedToday[opt.id] 
+                        ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 cursor-not-allowed" 
+                        : "bg-white text-slate-950 hover:bg-cyan-400"
+                    )}
                   >
-                    {loadingOffer === opt.id ? "Cargando..." : "Ver Ahora"}
+                    {loadingOffer === opt.id ? "Cargando..." : watchedToday[opt.id] ? "Completado hoy" : "Ver Ahora"}
                   </button>
                 </div>
 

@@ -365,10 +365,10 @@ export default function RunnerPage() {
   const handleReviveAwarded = () => {
     setIsRewardedOpen(false);
     setRevivesUsed(prev => prev + 1);
-    setTriggerRevive(true); // Firing event into phaser canvas
+    setTriggerRestart(true); // Indicar a Phaser que reinicie la escena
     setGameOver(false);
     setGameActive(true);
-    toast.success("¡Revivido! Tienes un escudo temporal de invulnerabilidad.", { icon: <Sparkles className="text-yellow-400" /> });
+    toast.success("¡Revivido! Carrera reiniciada desde el principio.", { icon: <Sparkles className="text-yellow-400" /> });
   };
 
   // Calcular porcentaje de XP para barra de nivel

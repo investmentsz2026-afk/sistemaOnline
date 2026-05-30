@@ -269,8 +269,8 @@ export default function LabyrinthPage() {
     setIsRewardedOpen(false);
     setRevivesUsed(prev => prev + 1);
     setLevelFailed(false);
-    setTriggerRevive(true); // Firing event into phaser canvas
-    toast.success("¡Revivido! Tienes unos segundos de inmunidad para continuar en el laberinto.");
+    setTriggerRestart(true); // Indicar a Phaser que reinicie la escena
+    toast.success("¡Revivido! Laberinto reiniciado desde el principio.");
   };
 
   const nextLevelXp = Math.pow(progress.level, 2) * 200;

@@ -30,6 +30,25 @@ export default async function OffersPage() {
     redirect("/login");
   }
 
+  // Obtener los anuncios vistos hoy
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const logs = await prisma.auditLog.findMany({
+    where: {
+      userId: session.user.id,
+      action: "POINTS_EARNED",
+      createdAt: { gte: today }
+    },
+    select: { description: true }
+  });
+
+  const watchedAdsToday = {
+    v1: logs.some(l => l.description.includes("Anuncio de Video")),
+    v2: logs.some(l => l.description.includes("Oferta Especial")),
+    v3: logs.some(l => l.description.includes("Mega Bono"))
+  };
+
   return (
     <main className="min-h-screen bg-[#050a1f] text-white selection:bg-cyan-500/30 overflow-x-hidden">
       {/* Background Layer */}
@@ -51,6 +70,7 @@ export default async function OffersPage() {
         <OffersClient 
           initialPoints={user.points || 0} 
           initialBalance={user.balance || 0} 
+          watchedAdsToday={watchedAdsToday}
         />
       </div>
     </main>

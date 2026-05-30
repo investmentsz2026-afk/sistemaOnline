@@ -12,6 +12,27 @@ export async function addPoints(amount: number, reason: string) {
   if (!session?.user?.id) return { success: false, error: "No autorizado" };
 
   try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Verificar si ya vio este anuncio hoy
+    const alreadyClaimed = await prisma.auditLog.findFirst({
+      where: {
+        userId: session.user.id,
+        action: "POINTS_EARNED",
+        description: {
+          contains: reason
+        },
+        createdAt: {
+          gte: today
+        }
+      }
+    });
+
+    if (alreadyClaimed) {
+      return { success: false, error: "Ya has completado esta oferta hoy. ¡Vuelve mañana!" };
+    }
+
     await prisma.user.update({
       where: { id: session.user.id },
       data: {
@@ -19,7 +40,7 @@ export async function addPoints(amount: number, reason: string) {
       }
     });
 
-    // Opcional: Registrar en auditoría
+    // Registrar en auditoría
     await prisma.auditLog.create({
       data: {
         userId: session.user.id,

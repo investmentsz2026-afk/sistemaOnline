@@ -274,8 +274,8 @@ export default function RoguelikePage() {
     setRevivesUsed(prev => prev + 1);
     setLevelFailed(false);
     setGameActive(true);
-    setActiveBooster("heal"); // auto-cura la vida completa al revivir
-    toast.success("¡Revivido! Recibiste curación completa para continuar tu aventura.");
+    setTriggerRestart(true); // Indicar a Phaser que reinicie la escena
+    toast.success("¡Revivido! Mazmorra reiniciada desde el principio.");
   };
 
   const nextLevelXp = Math.pow(progress.level, 2) * 200;

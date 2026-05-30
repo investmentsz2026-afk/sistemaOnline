@@ -369,10 +369,10 @@ export default function PuzzlePage() {
   const handleReviveAwarded = () => {
     setIsRewardedOpen(false);
     setRevivesUsed(prev => prev + 1);
-    setMovesLeft(5); // otorga 5 movimientos
     setLevelFailed(false);
     setGameActive(true);
-    toast.success("¡Revivido! Has ganado 5 movimientos extra para intentar completar la meta.", { icon: <Sparkles className="text-yellow-400" /> });
+    setTriggerRestart(true); // Indicar a Phaser que reinicie el tablero
+    toast.success("¡Revivido! Tablero reiniciado desde el principio para intentar de nuevo.", { icon: <Sparkles className="text-yellow-400" /> });
   };
 
   // Calcular porcentaje de XP general

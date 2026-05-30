@@ -271,8 +271,8 @@ export default function JumpPage() {
     setRevivesUsed(prev => prev + 1);
     setLevelFailed(false);
     setGameActive(true);
-    setActiveBooster("shield"); // le da escudo al revivir
-    toast.success("¡Revivido! Tienes un escudo de protección activo.");
+    setTriggerRestart(true);
+    toast.success("¡Revivido! Nivel reiniciado desde el principio.");
   };
 
   const nextLevelXp = Math.pow(progress.level, 2) * 200;
