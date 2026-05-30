@@ -208,23 +208,36 @@ export const RewardsClient = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const formatDisplayName = (name: string | null) => {
+    if (!name) return "Jugador";
+    if (name.includes("@")) {
+      return name.split("@")[0];
+    }
+    return name;
+  };
+
   const podium = [users[1], users[0], users[2]].filter(Boolean);
   const restOfUsers = users.slice(3);
 
   const PlayerAvatar = ({ user, size = "md", color = "cyan" }: { user: LeaderboardUser, size?: "sm" | "md" | "lg", color?: string }) => {
-    const initials = user.name?.substring(0, 2).toUpperCase() || "??";
-    const sizeClasses = { sm: "w-8 h-8 text-[10px]", md: "w-14 h-14 text-sm", lg: "w-24 h-24 text-2xl" };
+    const displayName = formatDisplayName(user.name);
+    const initials = displayName.substring(0, 2).toUpperCase() || "??";
+    const sizeClasses = { 
+      sm: "w-8 h-8 text-[10px] flex-shrink-0", 
+      md: "w-10 h-10 sm:w-14 sm:h-14 text-xs sm:text-sm flex-shrink-0", 
+      lg: "w-16 h-16 sm:w-24 sm:h-24 text-sm sm:text-2xl flex-shrink-0" 
+    };
 
     return (
       <div className={cn(
-        "rounded-full border-2 p-1 bg-[#0a102a] flex items-center justify-center overflow-hidden shadow-2xl",
+        "rounded-full border-2 p-1 bg-[#0a102a] flex items-center justify-center overflow-hidden shadow-2xl flex-shrink-0",
         sizeClasses[size as keyof typeof sizeClasses],
         color === "gold" ? "border-yellow-500 shadow-yellow-500/20" : 
         color === "silver" ? "border-slate-400 shadow-slate-400/20" : 
         color === "bronze" ? "border-amber-700 shadow-amber-800/20" : "border-white/10"
       )}>
         {user.image ? (
-          <img src={user.image} alt={user.name || ""} className="w-full h-full object-cover" />
+          <img src={user.image} alt={displayName} className="w-full h-full object-cover" />
         ) : (
           <span className="font-black text-slate-500 tracking-tighter">{initials}</span>
         )}
@@ -359,44 +372,44 @@ export const RewardsClient = ({
               </div>
 
               {/* Podium display */}
-              <div className="flex items-end justify-center w-full gap-3 md:gap-8 pt-10 px-2 max-w-3xl mx-auto">
+              <div className="flex items-end justify-center w-full gap-2 md:gap-8 pt-10 px-1 md:px-2 max-w-3xl mx-auto">
                 {users[1] && (
-                  <div className="flex-1 flex flex-col items-center group">
+                  <div className="flex-1 min-w-0 flex flex-col items-center group">
                     <div className="relative mb-4 group-hover:scale-105 transition-transform duration-500">
                       <PlayerAvatar user={users[1]} size="md" color="silver" />
-                      <div className="absolute -top-2 -right-2 bg-slate-400 text-slate-950 w-7 h-7 rounded-full flex items-center justify-center font-black text-xs shadow-lg">2</div>
+                      <div className="absolute -top-1.5 -right-1.5 bg-slate-400 text-slate-950 w-5 h-5 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-black text-[9px] sm:text-xs shadow-lg">2</div>
                     </div>
-                    <div className="w-full h-32 md:h-48 bg-gradient-to-t from-slate-500/40 via-slate-500/10 to-transparent rounded-t-[2.5rem] border-x border-t border-slate-500/30 flex flex-col items-center justify-center p-4">
-                      <div className="text-slate-300 font-black text-[10px] md:text-sm uppercase mb-2 font-black italic">+$50.00</div>
-                      <span className="text-white font-black uppercase text-[9px] md:text-sm truncate w-full text-center mb-1">{users[1].name}</span>
-                      <span className="text-slate-400 font-bold text-[8px] md:text-xs">{users[1].points} pts</span>
+                    <div className="w-full h-32 md:h-48 bg-gradient-to-t from-slate-500/40 via-slate-500/10 to-transparent rounded-t-[1.5rem] sm:rounded-t-[2.5rem] border-x border-t border-slate-500/30 flex flex-col items-center justify-center p-2 sm:p-4">
+                      <div className="text-slate-300 font-black text-[8px] sm:text-xs md:text-sm uppercase mb-1 font-black italic text-center">+$50.00</div>
+                      <span className="text-white font-black uppercase text-[8px] sm:text-xs md:text-sm truncate w-full text-center mb-0.5">{formatDisplayName(users[1].name)}</span>
+                      <span className="text-slate-400 font-bold text-[7px] sm:text-[10px] md:text-xs">{users[1].points} pts</span>
                     </div>
                   </div>
                 )}
                 {users[0] && (
-                  <div className="flex-[1.2] flex flex-col items-center z-10 group">
+                  <div className="flex-1 min-w-0 flex flex-col items-center z-10 group">
                     <div className="relative mb-6 group-hover:scale-110 transition-transform duration-500">
-                      <Crown className="absolute -top-12 left-1/2 -translate-x-1/2 w-10 h-10 text-yellow-400 animate-pulse" />
+                      <Crown className="absolute -top-8 sm:-top-12 left-1/2 -translate-x-1/2 w-6 h-6 sm:w-10 sm:h-10 text-yellow-400 animate-pulse" />
                       <PlayerAvatar user={users[0]} size="lg" color="gold" />
-                      <div className="absolute -top-1 -right-1 bg-yellow-500 text-yellow-950 w-9 h-9 rounded-full flex items-center justify-center font-black text-sm shadow-xl border-4 border-[#050a1f]">1</div>
+                      <div className="absolute -top-1 -right-1 bg-yellow-500 text-yellow-950 w-6 h-6 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-black text-[10px] sm:text-sm shadow-xl border-2 sm:border-4 border-[#050a1f]">1</div>
                     </div>
-                    <div className="w-full h-48 md:h-72 bg-gradient-to-t from-yellow-500/50 via-yellow-500/20 to-transparent rounded-t-[3rem] border-x border-t border-yellow-500/40 flex flex-col items-center justify-center p-6 shadow-[0_-30px_60px_rgba(234,179,8,0.2)]">
-                      <div className="text-yellow-400 font-black text-xs md:text-xl uppercase mb-4 animate-pulse italic font-black">+$100.00</div>
-                      <span className="text-white font-black uppercase text-[10px] md:text-2xl truncate w-full text-center mb-2">{users[0].name}</span>
-                      <span className="text-yellow-100 font-bold text-[10px] md:text-base">{users[0].points} pts</span>
+                    <div className="w-full h-48 md:h-72 bg-gradient-to-t from-yellow-500/50 via-yellow-500/20 to-transparent rounded-t-[2rem] sm:rounded-t-[3rem] border-x border-t border-yellow-500/40 flex flex-col items-center justify-center p-2 sm:p-6 shadow-[0_-30px_60px_rgba(234,179,8,0.2)]">
+                      <div className="text-yellow-400 font-black text-[10px] sm:text-sm md:text-xl uppercase mb-2 animate-pulse italic font-black text-center">+$100.00</div>
+                      <span className="text-white font-black uppercase text-[9px] sm:text-base md:text-2xl truncate w-full text-center mb-1">{formatDisplayName(users[0].name)}</span>
+                      <span className="text-yellow-100 font-bold text-[8px] sm:text-xs md:text-base">{users[0].points} pts</span>
                     </div>
                   </div>
                 )}
                 {users[2] && (
-                  <div className="flex-1 flex flex-col items-center group">
+                  <div className="flex-1 min-w-0 flex flex-col items-center group">
                     <div className="relative mb-4 group-hover:scale-105 transition-transform duration-500">
                       <PlayerAvatar user={users[2]} size="md" color="bronze" />
-                      <div className="absolute -top-2 -right-2 bg-amber-700 text-white w-7 h-7 rounded-full flex items-center justify-center font-black text-xs shadow-lg">3</div>
+                      <div className="absolute -top-1.5 -right-1.5 bg-amber-700 text-white w-5 h-5 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-black text-[9px] sm:text-xs shadow-lg">3</div>
                     </div>
-                    <div className="w-full h-24 md:h-36 bg-gradient-to-t from-amber-700/40 via-amber-700/10 to-transparent rounded-t-[2.5rem] border-x border-t border-amber-800/30 flex flex-col items-center justify-center p-4">
-                      <div className="text-amber-500 font-black text-[8px] md:text-xs uppercase mb-1 font-black italic text-center">+$25.00</div>
-                      <span className="text-white font-black uppercase text-[9px] md:text-xs truncate w-full text-center mb-1">{users[2].name}</span>
-                      <span className="text-amber-800 font-bold text-[7px] md:text-[10px]">{users[2].points} pts</span>
+                    <div className="w-full h-24 md:h-36 bg-gradient-to-t from-amber-700/40 via-amber-700/10 to-transparent rounded-t-[1.5rem] sm:rounded-t-[2.5rem] border-x border-t border-amber-800/30 flex flex-col items-center justify-center p-2 sm:p-4">
+                      <div className="text-amber-500 font-black text-[8px] sm:text-2xs md:text-xs uppercase mb-1 font-black italic text-center">+$25.00</div>
+                      <span className="text-white font-black uppercase text-[8px] sm:text-2xs md:text-xs truncate w-full text-center mb-0.5">{formatDisplayName(users[2].name)}</span>
+                      <span className="text-amber-800 font-bold text-[7px] sm:text-[9px] md:text-[10px]">{users[2].points} pts</span>
                     </div>
                   </div>
                 )}
@@ -404,13 +417,15 @@ export const RewardsClient = ({
 
               <div className="bg-[#0b0e14]/80 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl">
                 {restOfUsers.map((user, idx) => (
-                  <div key={user.id} className="px-8 py-5 flex items-center justify-between border-b border-white/5 last:border-0 hover:bg-white/[0.03] transition-all">
-                    <div className="flex items-center gap-6">
+                  <div key={user.id} className="px-4 sm:px-8 py-5 flex items-center justify-between border-b border-white/5 last:border-0 hover:bg-white/[0.03] transition-all">
+                    <div className="flex items-center gap-3 sm:gap-6 min-w-0 flex-1">
                       <span className="text-sm font-black text-slate-700 italic">#{idx + 4}</span>
                       <PlayerAvatar user={user} size="sm" />
-                      <span className="text-xs font-black text-white uppercase tracking-tight">{user.name}</span>
+                      <span className="text-xs font-black text-white uppercase tracking-tight truncate max-w-[120px] sm:max-w-[200px]">
+                        {formatDisplayName(user.name)}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 flex-shrink-0">
                       <div className="flex flex-col items-end">
                         <span className="text-xs font-black text-white italic tracking-tighter">{user.points} pts</span>
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] mt-1" />
