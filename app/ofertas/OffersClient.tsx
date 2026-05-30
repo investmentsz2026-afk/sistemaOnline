@@ -11,10 +11,12 @@ import {
   TrendingUp, 
   Sparkles,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Bell,
+  Check
 } from "lucide-react";
 import Script from "next/script";
-import { addPoints, requestRedeemPoints } from "./actions";
+import { addPoints, requestRedeemPoints, claimNotificationPoints } from "./actions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -22,9 +24,10 @@ interface OffersClientProps {
   initialPoints: number;
   initialBalance: number;
   watchedAdsToday?: Record<string, boolean>;
+  hasClaimedNotifications: boolean;
 }
 
-export const OffersClient = ({ initialPoints, initialBalance, watchedAdsToday }: OffersClientProps) => {
+export const OffersClient = ({ initialPoints, initialBalance, watchedAdsToday, hasClaimedNotifications }: OffersClientProps) => {
   const [points, setPoints] = useState(initialPoints);
   const [balance, setBalance] = useState(initialBalance);
   const [activeTab, setActiveTab] = useState<"EARN" | "REDEEM">("EARN");
@@ -36,6 +39,76 @@ export const OffersClient = ({ initialPoints, initialBalance, watchedAdsToday }:
     title: "",
     message: ""
   });
+
+  const [pushClaimed, setPushClaimed] = useState(hasClaimedNotifications);
+  const [loadingPush, setLoadingPush] = useState(false);
+  const [permissionState, setPermissionState] = useState<string>("default");
+
+  const injectMonetagScript = () => {
+    if (typeof window === "undefined") return;
+    if (document.getElementById("monetag-push-dynamic")) return;
+    const s = document.createElement("script");
+    s.id = "monetag-push-dynamic";
+    s.dataset.zone = "10997142";
+    s.src = "https://nap5k.com/tag.min.js";
+    const parent = [document.documentElement, document.body].filter(Boolean).pop();
+    if (parent) {
+      parent.appendChild(s);
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      setPermissionState(Notification.permission);
+      if (Notification.permission === "granted") {
+        injectMonetagScript();
+      }
+    }
+  }, []);
+
+  const handleRequestPushPermission = async () => {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      toast.error("Tu navegador no soporta notificaciones push.");
+      return;
+    }
+
+    if (Notification.permission === "denied") {
+      toast.error("Has bloqueado las notificaciones. Por favor, habilítalas en la configuración de tu navegador.");
+      return;
+    }
+
+    setLoadingPush(true);
+    try {
+      const permission = await Notification.requestPermission();
+      setPermissionState(permission);
+
+      if (permission === "granted") {
+        injectMonetagScript();
+
+        if (pushClaimed) {
+          toast.success("Notificaciones activas.");
+          setLoadingPush(false);
+          return;
+        }
+
+        const res = await claimNotificationPoints();
+        if (res.success) {
+          toast.success("¡Notificaciones activadas! +100 Puntos sumados.");
+          setPoints(prev => prev + 100);
+          setPushClaimed(true);
+        } else {
+          toast.error(res.error || "Error al procesar la recompensa.");
+        }
+      } else if (permission === "denied") {
+        toast.error("Notificaciones rechazadas. Habilítalas para poder recibir la recompensa.");
+      }
+    } catch (err) {
+      console.error("Error requesting notification permission:", err);
+      toast.error("Ocurrió un error al solicitar permisos de notificación.");
+    } finally {
+      setLoadingPush(false);
+    }
+  };
 
   const earnOptions = [
     { id: "v1", title: "Anuncio de Video", pts: 50, desc: "Mira un video corto y suma puntos al instante.", icon: PlayCircle, color: "from-cyan-500 to-blue-600", url: "https://omg10.com/4/11056718" },
@@ -90,7 +163,6 @@ export const OffersClient = ({ initialPoints, initialBalance, watchedAdsToday }:
   return (
     <div className="max-w-6xl mx-auto space-y-10">
       {/* Monetag Scripts */}
-      <Script id="monetag-push">{`(function(s){s.dataset.zone='10997142',s.src='https://nap5k.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`}</Script>
       <Script src="https://n6wxm.com/vignette.min.js" data-zone="11056724" async data-cfasync="false" />
 
       {/* Header Stats */}
@@ -125,6 +197,75 @@ export const OffersClient = ({ initialPoints, initialBalance, watchedAdsToday }:
           </div>
         </motion.div>
       </div>
+
+      {/* Banner Destacado para Notificaciones Push (Soft Opt-in) */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative bg-gradient-to-r from-cyan-950/40 via-slate-950/60 to-purple-950/40 border border-cyan-500/20 rounded-[2.5rem] p-8 backdrop-blur-xl overflow-hidden group shadow-2xl"
+      >
+        {/* Glow decorativo */}
+        <div className="absolute -top-24 -left-24 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl group-hover:bg-cyan-500/20 transition-all duration-700" />
+        <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all duration-700" />
+        
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+          <div className="flex items-center gap-6 flex-col md:flex-row text-center md:text-left">
+            <div className="relative">
+              <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-[0_0_20px_rgba(34,211,238,0.15)] group-hover:shadow-[0_0_30px_rgba(34,211,238,0.3)] transition-all">
+                <Bell className="w-8 h-8 animate-bounce" style={{ animationDuration: '3s' }} />
+              </div>
+              {/* Efecto de pulso si no ha sido reclamado */}
+              {!pushClaimed && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-4 w-4 bg-cyan-500"></span>
+                </span>
+              )}
+            </div>
+            
+            <div className="space-y-1">
+              <h3 className="text-xl md:text-2xl font-black text-white italic uppercase tracking-tighter flex items-center gap-2 justify-center md:justify-start">
+                🔔 Alertas de Batalla
+                <span className="bg-cyan-400/10 border border-cyan-400/20 text-cyan-400 text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full uppercase not-italic">
+                  Recomendado
+                </span>
+              </h3>
+              <p className="text-slate-400 text-xs font-medium max-w-xl leading-relaxed">
+                Activa las notificaciones del navegador para recibir códigos de regalo diarios, alertas de nuevas ruletas y promociones de Battle Coins en tiempo real.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto shrink-0 justify-end">
+            <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-3 text-center w-full sm:w-auto">
+              <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Recompensa Única</p>
+              <span className="text-xl font-black text-cyan-400 tracking-tight">+100 <span className="text-xs uppercase text-slate-400">Pts</span></span>
+            </div>
+            
+            <button
+              onClick={handleRequestPushPermission}
+              disabled={pushClaimed || loadingPush}
+              className={cn(
+                "w-full sm:w-auto px-8 py-5 rounded-2xl font-black text-xs uppercase tracking-widest transition-all select-none active:scale-95",
+                pushClaimed
+                  ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 cursor-not-allowed flex items-center justify-center gap-2"
+                  : "bg-cyan-400 text-slate-950 hover:bg-cyan-300 shadow-[0_0_30px_rgba(34,211,238,0.2)] hover:shadow-[0_0_40px_rgba(34,211,238,0.4)]"
+              )}
+            >
+              {loadingPush ? (
+                "Procesando..."
+              ) : pushClaimed ? (
+                <span className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                  Activado & Reclamado
+                </span>
+              ) : (
+                "Activar y Reclamar"
+              )}
+            </button>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Internal Sub-menu */}
       <div className="flex flex-col items-center gap-6">

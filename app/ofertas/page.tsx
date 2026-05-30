@@ -49,6 +49,20 @@ export default async function OffersPage() {
     v3: logs.some(l => l.description.includes("Mega Bono"))
   };
 
+  // Verificar si ya reclamó los puntos por activar las notificaciones (de por vida)
+  const claimedNotificationsLog = await prisma.auditLog.findFirst({
+    where: {
+      userId: session.user.id,
+      action: "POINTS_EARNED",
+      description: {
+        contains: "Activación de Notificaciones"
+      }
+    },
+    select: { id: true }
+  });
+
+  const hasClaimedNotifications = !!claimedNotificationsLog;
+
   return (
     <main className="min-h-screen bg-[#050a1f] text-white selection:bg-cyan-500/30 overflow-x-hidden">
       {/* Background Layer */}
@@ -71,6 +85,7 @@ export default async function OffersPage() {
           initialPoints={user.points || 0} 
           initialBalance={user.balance || 0} 
           watchedAdsToday={watchedAdsToday}
+          hasClaimedNotifications={hasClaimedNotifications}
         />
       </div>
     </main>

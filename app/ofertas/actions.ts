@@ -59,6 +59,58 @@ export async function addPoints(amount: number, reason: string) {
 }
 
 /**
+ * Reclama la recompensa única por activar notificaciones.
+ */
+export async function claimNotificationPoints() {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, error: "No autorizado" };
+
+  try {
+    // Verificar si ya reclamó este premio en toda la historia (de por vida)
+    const alreadyClaimed = await prisma.auditLog.findFirst({
+      where: {
+        userId: session.user.id,
+        action: "POINTS_EARNED",
+        description: {
+          contains: "Activación de Notificaciones"
+        }
+      }
+    });
+
+    if (alreadyClaimed) {
+      return { success: false, error: "Ya has reclamado los puntos por activar las notificaciones." };
+    }
+
+    const pointsReward = 100;
+
+    // Incrementar puntos del usuario
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: {
+        points: { increment: pointsReward }
+      }
+    });
+
+    // Registrar en la auditoría
+    await prisma.auditLog.create({
+      data: {
+        userId: session.user.id,
+        action: "POINTS_EARNED",
+        description: `Ganó ${pointsReward} puntos por: Activación de Notificaciones`
+      }
+    });
+
+    revalidatePath("/ofertas");
+    revalidatePath("/inicio");
+    return { success: true, pointsAdded: pointsReward };
+  } catch (error) {
+    console.error("Error claiming notification points:", error);
+    return { success: false, error: "Error al procesar los puntos de notificaciones" };
+  }
+}
+
+
+/**
  * Crea una solicitud de canje para ser aprobada por el admin.
  */
 export async function requestRedeemPoints(optionId: "BASIC" | "PREMIUM") {
