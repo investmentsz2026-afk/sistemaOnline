@@ -26,6 +26,10 @@ export async function createWithdrawalRequest(data: {
       return { success: false, error: "Usuario no encontrado." };
     }
 
+    if (data.method.toLowerCase() !== "paypal") {
+      return { success: false, error: "Por el momento solo podemos hacer retiros por PayPal." };
+    }
+
     if (data.amount !== 0.02 && data.amount < 5.00) {
       return { success: false, error: "El monto mínimo de retiro es de $5.00 USD." };
     }

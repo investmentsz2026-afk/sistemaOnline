@@ -88,6 +88,10 @@ export const RetiroOptions = ({ balance, welcomeGiftWithdrawn }: RetiroOptionsPr
   const balanceInUsd = balance;
   
   const handleWithdrawClick = (option: any) => {
+    if (option.id !== "paypal") {
+      toast.error("Por el momento solo podemos hacer retiros por PayPal.");
+      return;
+    }
     if (balanceInUsd < selectedAmount) {
       toast.error("No tienes saldo suficiente.");
       return;
